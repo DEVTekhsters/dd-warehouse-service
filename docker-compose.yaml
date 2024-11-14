@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  clickhouse-server:
+    image: yandex/clickhouse-server
+    volumes:
+      - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse/zookeeper-servers.xml:/etc/clickhouse-server/conf.d/zookeeper-servers.xml
+      - ./shared/ch-data/clickhouse:/var/lib/clickhouse
+    ports:
+      - '8123:8123'   # HTTP interface
+      - '9002:9002'   # Native client
+
+  clickhouse-client:
+    image: yandex/clickhouse-client
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"  # Grafana UI port
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set a password for the admin user
+      - GF_PROVISIONING_PATHS_DATASOURCES=/etc/grafana/provisioning/datasources
+    volumes:
+      - grafana-data:/var/lib/grafana  # Persist Grafana data
+      - ./provisioning:/etc/grafana/provisioning  # Mount provisioning directory
+
+  web:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0
+    volumes:
+      - .:/app
+    ports:
+      - 8002:8000
+
+volumes:
+  grafana-data:

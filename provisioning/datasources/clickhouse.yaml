@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    type: clickhouse
+    access: proxy
+    url: clickhouse-server
+    basicAuth: false
+    jsonData:
+      database: default
+      user: default
+      password: ""
