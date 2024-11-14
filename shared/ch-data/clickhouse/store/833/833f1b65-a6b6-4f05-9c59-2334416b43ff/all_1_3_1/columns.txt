@@ -1,0 +1,5 @@
+columns format version: 1
+3 columns:
+`key` UInt32
+`value` String
+`metric` Float64

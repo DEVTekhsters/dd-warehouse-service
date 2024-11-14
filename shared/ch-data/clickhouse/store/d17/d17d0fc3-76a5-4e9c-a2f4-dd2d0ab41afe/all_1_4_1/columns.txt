@@ -1,0 +1,10 @@
+columns format version: 1
+8 columns:
+`id` String
+`name` String
+`serviceType` String
+`json` String
+`updatedAt` UInt64
+`updatedBy` String
+`deleted` UInt8
+`nameHash` String
