@@ -1,0 +1,19 @@
+[
+    {
+        "file_path": "/home/appvin/Documents/space2/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-PAN-India.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 49,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "Signature",
+            "DEPARTMEN",
+            "Permanent"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
+    }
+]
