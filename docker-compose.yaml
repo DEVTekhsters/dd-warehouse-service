@@ -6,7 +6,7 @@ services:
     volumes:
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml
       - ./clickhouse/zookeeper-servers.xml:/etc/clickhouse-server/conf.d/zookeeper-servers.xml
-      - ./shared/ch-data/clickhouse:/var/lib/clickhouse
+      - ./shared/ch-data/clickhouse:/var/lib/clickhouse  # Persistent data storage
     ports:
       - '8123:8123'   # HTTP interface
       - '9002:9002'   # Native client
@@ -39,3 +39,6 @@ services:
 
 volumes:
   grafana-data:
+    # Grafana volume to store data persistently
+  shared-ch-data:
+    # ClickHouse data volume to store data persistently
