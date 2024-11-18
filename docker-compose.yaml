@@ -35,7 +35,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - 8002:8000
+      - "8002:8000"
 
 volumes:
   grafana-data:
