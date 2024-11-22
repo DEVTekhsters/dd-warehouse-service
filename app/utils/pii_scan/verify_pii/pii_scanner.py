@@ -9,26 +9,8 @@ from app.utils.pii_scan.core.usage_files_xlsx import xlsx_file_pii_detector
 from app.utils.pii_scan.structured_ner_main import MLBasedNERScannerForStructuredData
 from fastapi import HTTPException
 
-
-# Define the path where you want to store your logs
-LOG_FOLDER = Path(__file__).resolve().parent.parent / 'logs'
-
-# Make sure the directory exists, create it if not
-if not LOG_FOLDER.exists():
-    LOG_FOLDER.mkdir(parents=True, exist_ok=True)
-
-
-
-logging.basicConfig(
-    level=logging.INFO,  # Log level INFO will capture INFO, WARNING, ERROR, CRITICAL
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format for log messages
-    handlers=[
-        logging.FileHandler(LOG_FOLDER / 'app.log'),  # Log to 'app.log' inside the 'logs' folder
-        logging.StreamHandler()  # Log to the console as well
-    ]
-)
+# Setup logging
 logger = logging.getLogger(__name__)
-
 
 class PIIScanner:
     def __init__(self):
