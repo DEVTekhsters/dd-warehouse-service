@@ -34,6 +34,7 @@ services:
     command: uvicorn main:app --host 0.0.0.0
     volumes:
       - .:/app
+      - /home/ubuntu/data_discovery_files:/app/data_discovery_files
     ports:
       - "8002:8000"
 
