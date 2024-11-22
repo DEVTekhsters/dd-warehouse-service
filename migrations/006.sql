@@ -3,6 +3,6 @@ CREATE TABLE IF NOT EXISTS dbservice_entity_meta_info (
     dbservice_entity_id String,
     dbservice_entity_name String,
     source String,
-    region String,
+    region String
 ) ENGINE = MergeTree()
 ORDER BY id;
