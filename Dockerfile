@@ -5,7 +5,7 @@ FROM python:3.9
 WORKDIR /usr/src/app
 
 # Install system dependencies (including OpenGL)
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 && rm -rf /var/lib/apt/lists/*  
+RUN apt-get update && apt-get install -y tesseract-ocr libgl1-mesa-glx libglib2.0-0 && rm -rf /var/lib/apt/lists/*  
 # Provides libGL.so.1 for OpenGL, Common dependency for many packages, including OpenCV, Clean up cache to reduce image size
 
 
