@@ -3,28 +3,8 @@ from pathlib import Path
 from app.utils.ner_scanner.check_digit import CheckDigitScanner
 from typing import Dict, List, Union
 
-
-# Define the path where you want to store your logs
-LOG_FOLDER = Path(__file__).resolve().parent.parent / 'logs'
-
-# Make sure the directory exists, create it if not
-if not LOG_FOLDER.exists():
-    LOG_FOLDER.mkdir(parents=True, exist_ok=True)
-
-
-
-logging.basicConfig(
-    level=logging.INFO,  # Log level INFO will capture INFO, WARNING, ERROR, CRITICAL
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format for log messages
-    handlers=[
-        logging.FileHandler(LOG_FOLDER / 'app.log'),  # Log to 'app.log' inside the 'logs' folder
-        logging.StreamHandler()  # Log to the console as well
-    ]
-)
+# Setup logging
 logger = logging.getLogger(__name__)
-
-
-
 
 class Verify_PII_Digit:
     def __init__(self):
