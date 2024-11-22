@@ -15,5 +15,50 @@
         "addresses": [
             "INDIA"
         ]
+    },
+    {
+        "file_path": "/home/appvin/Documents/space2/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "2007294190",
+            "800 100 1007",
+            "800 180 1947"
+        ],
+        "addresses": [
+            "Children",
+            "Chikiten",
+            "Groestone"
+        ]
+    },
+    {
+        "file_path": "/home/appvin/Documents/space2/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/pan.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 63,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "BWEKYSJOR",
+            "DEPARTMEN",
+            "SWEKYSJOR",
+            "3WEKYSJOR",
+            "Signature",
+            "Permanent"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
     }
 ]
