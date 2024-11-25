@@ -33,7 +33,7 @@ async def process_unstructured_files(data_received: DataReceived, background_tas
     # for server
     parent_directory_path = os.path.abspath("data_discovery_files")
     # for local machine
-    parent_directory_path = os.path.abspath("../data_discovery_files")
+    #parent_directory_path = os.path.abspath("../data_discovery_files")
 
     data = {
         "source_bucket": data_received.source_bucket,
