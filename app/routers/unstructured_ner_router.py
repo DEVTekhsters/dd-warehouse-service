@@ -30,8 +30,10 @@ class DataReceived(BaseModel):
 # FastAPI route to process unstructured files in the background
 @router.post("/process_unstructured")
 async def process_unstructured_files(data_received: DataReceived, background_tasks: BackgroundTasks):
+    # for server
+    parent_directory_path = os.path.abspath("data_discovery_files")
+    # for local machine
     parent_directory_path = os.path.abspath("../data_discovery_files")
-
 
     data = {
         "source_bucket": data_received.source_bucket,
