@@ -31,8 +31,8 @@ class DataReceived(BaseModel):
 @router.post("/process_unstructured")
 async def process_unstructured_files(data_received: DataReceived, background_tasks: BackgroundTasks):
     # for server
-    parent_directory_path = os.path.abspath("data_discovery_files")
-    # for local machine
+    parent_directory_path = os.path.abspath("/app/data_discovery_files")
+    # for local machine with env
     #parent_directory_path = os.path.abspath("../data_discovery_files")
 
     data = {
