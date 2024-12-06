@@ -1,4 +1,4 @@
-import clickhouse_connect
+from client_connect import Connection
 import pandas as pd
 import logging
 import json
@@ -15,7 +15,8 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         logger.error("The DataFrame is empty. No data to insert or update.")
         raise ValueError("The DataFrame is empty. No data to insert or update.")
     
-    client = clickhouse_connect.get_client(host='clickhouse-server', username='default', password='')
+    connection = Connection()  # Example connection object (replace with your actual connection logic)
+    client = connection.client
     
     table_name = f"{entity_type}"
     
