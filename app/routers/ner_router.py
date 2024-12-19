@@ -50,10 +50,12 @@ def process_and_update_ner_results(table_id: str, data: dict):
     """
     Process NER on each column in the CSV data and update the results in ClickHouse.
     """
+    print(f"------------------------------{table_id}")
     try:
         # Iterate over each column in the data
         for column_name, column_data in data.items():
             # Process NER for the column data
+            print(f"------------------------------{table_id}-----------{column_name}")
             json = scanner.scan(sample_data_rows=column_data, chunk_size=1000)
             if json:
                 ner_results = json.get("highest_label", None)
@@ -61,7 +63,11 @@ def process_and_update_ner_results(table_id: str, data: dict):
                 json = 'NA'
                 ner_results = 'NA'
             # Save or update the NER results in ClickHouse
+            logger.info(f"Data process for coulumn {column_name}")
+            print(f"------------------------------{json}--")
+            print(f"------------------------------{ner_results}")
             update_result = update_entity_for_column(table_id, column_name, ner_results, json)
+            
             if not update_result:
                 logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
                 return False
