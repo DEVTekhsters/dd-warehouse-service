@@ -20,7 +20,6 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
     
     table_name = f"{entity_type}"
     
-    print(f"processing : {table_name}")
     # Determine whether to use 'id' or 'entityFQNHash' based on entity_type
     if entity_type in ["dbservice_entity", "database_schema_entity", "field_relationship", "table_entity"]:
         identifier_column = 'id'
@@ -89,18 +88,26 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         for i in range(0, len(data[identifier_column]), batch_size):
             batch_data = data.iloc[i:i + batch_size]
             rows = []  # Initialize an empty list to collect rows
-
             for index in batch_data.index:
                 row = batch_data.loc[index]
+                logger.info(f"row:{row}")
+                logger.info(f"row_json :{row['json']}")
                 data_host = json.loads(row['json'])  # JSON is also the column name in data
-                host_port = data_host['connection']['config']['hostPort']
-                host_parts = host_port.split(".")
+                # host_port = data_host['connection']['config']['hostPort']
+                host_port = data_host.get('connection', {}).get('config', {}).get('hostPort', '')
+                host_parts = host_port.split(".") if host_port else []
 
-                # Extract relevant fields directly from the DataFrame
-                dbservice_entity_id = row['id']  #  'id' is the actual column name in data
-                dbservice_entity_name = row['name']  #  'name' is the actual column name in data
-                region = host_parts[2]  # Assuming the region is the 3rd part of the hostPort
-                source = host_parts[4]  # Assuming the source is the 5th part of the hostPort
+                # Ensure host_parts has enough elements before accessing indices
+                region = host_parts[2] if len(host_parts) > 2 else "N/A"
+                source = host_parts[4] if len(host_parts) > 4 else "N/A"
+
+                # Extract other fields directly from the DataFrame
+                dbservice_entity_id = row['id']  # 'id' is the actual column name in data
+                dbservice_entity_name = row['name']  # 'name' is the actual column name in data
+
+                # Log the hostPort and extracted parts
+                logger.info(f"Host port: {host_port}, Region: {region}, Source: {source}")
+
 
                 # Append the extracted data as a tuple to the rows list
                 rows.append((dbservice_entity_id, dbservice_entity_name, source, region))
