@@ -1,5 +1,5 @@
 # Use official Python image
-FROM python:3.9
+FROM python:3.10
 
 # Set work directory
 WORKDIR /usr/src/app
