@@ -6,9 +6,9 @@ from pathlib import Path
 from minio import Minio
 from dotenv import load_dotenv
 from client_connect import Connection
-from fastapi import APIRouter, HTTPException, File, BackgroundTasks
-from app.utils.pii_scan.verify_pii.pii_scanner import PIIScanner
-from app.utils.pii_scan.verify_pii.check_digit_pii import Verify_PII_Digit
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pii_scanner.scanner import PIIScanner
+from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
 
 
@@ -49,7 +49,7 @@ minio_client = Minio(
 # FastAPI route to process unstructured files in the background
 @router.post("/process_unstructured")
 async def process_unstructured_files(data_received: DataReceived, background_tasks: BackgroundTasks):
-    bucket_name = MINIO_BUCKET_NAME # The actual bucket name
+    bucket_name = MINIO_BUCKET_NAME  # The actual bucket name
     folder_name = data_received.source_bucket  # Folder name is provided by the user (e.g., "c762bd76-7fd2-4d8c-812a-a8eae6debce1")
 
     # Start the background task to process files
@@ -66,8 +66,8 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
 
         # Process each object (file) one by one
         for obj in objects:
-            
-            
+
+            # Get the file name
             file_name = obj.object_name
             logger.info(f"Processing file: {file_name}")
 
@@ -91,39 +91,14 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
             if temp_file_path.exists():
                 os.remove(temp_file_path)
                 logger.info(f"Deleted local temp file: {temp_file_path}")
-
-        # # After processing all files, you can delete the folder itself (if needed).
-        
-        # await remove_folder_if_empty(bucket_name, folder_name)
-        
+                logger.info("All files processed successfully.")
 
     except Exception as e:
         logger.error(f"Error during file processing: {e}")
         raise HTTPException(status_code=500, detail=f"Error during file processing: {str(e)}")
     
-   
-async def remove_folder_if_empty(bucket_name: str, folder_name: str):
-    """Remove the folder from MinIO if it's empty (i.e., no objects with that prefix)."""
-    try:
-        # List objects under the given folder (prefix)
-        objects = list(minio_client.list_objects(bucket_name, prefix=folder_name + "/", recursive=True))
 
-        # Check if there are any objects under the folder
-        if not objects:
-            # No objects found, the folder is empty. We can safely remove the folder.
-            logger.info(f"The folder '{folder_name}' is empty. Removing the folder prefix from the bucket.")
-            # Remove the folder prefix (this just means no objects with the prefix remain)
-            minio_client.remove_object(bucket_name, folder_name)
-            logger.info(f"Successfully removed the folder prefix '{folder_name}' from the bucket.")
-        else:
-            # Objects are still present, so we cannot remove the folder yet
-            logger.info(f"The folder '{folder_name}' is not empty. Skipping deletion.")
-
-    except Exception as e:
-        logger.error(f"Error during folder deletion check: {e}")
-        raise HTTPException(status_code=500, detail=f"Error checking folder {folder_name} for deletion: {str(e)}")
-
-
+    
 # Process the file with the NER model (your existing model logic)
 async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     """Process the file with the NER model and PII scanner."""
@@ -136,7 +111,8 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     try:
         # Initialize the PII scanner
         scanner = PIIScanner()
-        result = scanner.main(file_path, sample_size=0.2, chunk_size=500)
+        result = await scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
+        print(result)
 
         if not result:
             logger.error(f"No PII detected in the file {file_name}. Skipping further processing.")
@@ -151,36 +127,38 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
             "source": data_received.source_type,
             "region": data_received.region,
         }
+        final_result = {entity['type'] for item in result for entity in item['entity_detected']}
 
-        # Verify PII results
-        check = Verify_PII_Digit()
-        check_pii_results = check.verify(result=result, file_type=file_type)
+        # Prepare the final result in the required format
+        unique_entity_types= {
+            "entity_types": list(final_result)
+        }
 
         # Save results to the database (ClickHouse)
-        save_unstructured_ner_data(result, metadata)
+        save_unstructured_ner_data(unique_entity_types, metadata)
 
-        return {"message": "File processed successfully", "pii_results": result, "metadata": metadata, "check_pii_result": check_pii_results}
+        return {"message": "File processed successfully", "pii_results": result, "metadata": metadata}
 
     except Exception as e:
         logger.error(f"Error processing file {file_name}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-
+    
 
 # Save NER results to ClickHouse database (example)
-def save_unstructured_ner_data(result, metadata):
+def save_unstructured_ner_data(unique_entity_types, metadata):
     """Save the processed NER results into the database (e.g., ClickHouse)."""
-    if not result:
+    if not unique_entity_types:
         logger.error("No PII data detected in the file.")
         raise ValueError("No PII data detected")
 
     # Convert the results to JSON
-    pii_results_json = json.dumps(result)
+    unique_types_json = json.dumps(unique_entity_types)
 
     # Insert data into the database (example query)
     data_to_insert = {
         "source_bucket": metadata.get("source_bucket"),
         "file_name": metadata.get("file_name"),
-        "json": pii_results_json,
+        "json": unique_types_json,
         "file_size": metadata.get("file_size"),
         "file_type": metadata.get("file_type"),
         "source": metadata.get("source"),
@@ -200,4 +178,4 @@ def save_unstructured_ner_data(result, metadata):
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
     except Exception as e:
         logger.error(f"Error inserting data into the database: {e}")
-        raise HTTPException(status_code=500, detail="Error inserting data into the database")
+        raise HTTPException(status_code=500, detail="Error inserting data into the database")   
