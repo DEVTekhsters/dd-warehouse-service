@@ -85,20 +85,45 @@ async def process_and_update_ner_results(data: Dict) -> List[Dict]:
 
     return results
 
+def process_file_data(file_path: str, file_extension: str) -> Dict:
+    """
+    Processes a file based on its extension (CSV, Excel, JSON) into a dictionary structure.
+    """
+    try:
+        if file_extension == 'csv':
+            data = pd.read_csv(file_path, sep=";")
+        elif file_extension in ['xlsx', 'xls']:
+            data = pd.read_excel(file_path)
+        elif file_extension == 'json':
+            data = pd.read_json(file_path)
+        else:
+            raise ValueError("Unsupported file format")
+        
+        if data.empty:
+            raise ValueError(f"No valid data found in {file_extension.upper()} file")
+
+        column_data = {col: [str(value) for value in data[col]] for col in data.columns}
+        logger.info(f"Processed {file_extension.upper()} file {file_path} with columns: {list(data.columns)}")
+        return column_data
+    except Exception as e:
+        logger.error(f"Error processing {file_extension.upper()} file '{file_path}': {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing {file_extension.upper()} file: {str(e)}")
+
 async def process_file(file_path: str, file_extension: str) -> Dict:
     """
-    Processes the file based on its extension (CSV, PDF, etc.) and performs PII scanning.
+    Processes the file based on its extension (CSV, PDF, Excel, JSON, etc.) and performs PII scanning.
     """
     logger.info(f"Processing file: {file_path} with extension: {file_extension}")
     
-    if file_extension in ['xlsx', 'xls', 'csv', 'json']:
-        data = process_csv_data(file_path)
+    if file_extension in ['csv', 'xlsx', 'xls', 'json']:
+        data = process_file_data(file_path, file_extension)
         return await process_and_update_ner_results(data)
     
     elif file_extension in ['pdf', 'txt', 'doc', 'docx']:
         return await process_unstructured_file(file_path)
     
     return {"error": "Unsupported file format."}
+
 
 async def process_unstructured_file(file_path: str) -> Dict:
     """
@@ -139,7 +164,7 @@ async def process_multiple_files(
     """
     Processes multiple uploaded files using the PII scanner.
     """
-    allowed_extensions = {'csv', 'xlsx', 'xls', 'json', 'txt', 'pdf'}
+    allowed_extensions = {'csv', 'xlsx', 'xls', 'json', 'txt', 'pdf',"docx","doc"}
     
     # Validate file extensions
     if not files:
