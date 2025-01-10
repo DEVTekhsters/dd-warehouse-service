@@ -14,9 +14,6 @@ from typing import Dict
 import asyncio
 import pandas as pd
 from io import StringIO
-import nltk
-nltk.download('punkt_tab')
-
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -91,7 +88,7 @@ async def predict_ner(table_id: str, file: UploadFile):
     save_result = await process_and_update_ner_results(table_id, data)
     
     if not save_result:
-        raise HTTPException(status_code=500, detail=f"Failed to save or update STRUCTURED data for table_id: {table_id}")
+        raise HTTPException(status_code=500, detail=f"Failed to save or update NER data for table_id: {table_id}")
     
     return {"message": "Data uploaded and processed successfully", "details": save_result}  
 
@@ -155,12 +152,12 @@ async def process_and_update_ner_results(table_id: str, data: dict):
             # Update the NER results in ClickHouse
             update_result = await update_entity_for_column(table_id, column_name, ner_results)
             if not update_result:
-                logger.error(f"Failed to save STRUCTURED results for table_id: {table_id}, column: {column_name}")
+                logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
                 return False
 
         return True
     except Exception as e:
-        logger.error(f"Error processing STRUCTURED results: {str(e)}")
+        logger.error(f"Error processing NER results: {str(e)}")
         return False
 
 # Function to update NER results for each column in ClickHouse
@@ -182,7 +179,7 @@ async def update_entity_for_column(table_id, column_name, ner_results):
 
         # Execute query to insert/update data
         client.command(query, params)
-        logger.info(f"Successfully inserted/updated STRUCTURED result for table_id: {table_id}, column_name: {column_name}")
+        logger.info(f"Successfully inserted/updated NER result for table_id: {table_id}, column_name: {column_name}")
         return True
     except Exception as e:
         logger.error(f"Error inserting/updating data in ClickHouse: {str(e)}")
