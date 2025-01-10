@@ -111,7 +111,7 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     try:
         # Initialize the PII scanner
         scanner = PIIScanner()
-        result = await scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
+        result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
         print(result)
 
         if not result:
