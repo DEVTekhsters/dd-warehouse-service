@@ -79,9 +79,10 @@ def get_clickhouse_client():
 async def predict_ner(table_id: str, file: UploadFile):
     if not table_id:
         raise HTTPException(status_code=400, detail="Missing required parameter: table_id")
+    file_extension = file.filename.split(".")[-1]
 
     # Process the CSV file
-    data = await process_csv_data(file)
+    data = await process_file_data(file,file_extension)
 
     # Process NER and update results in ClickHouse
     save_result = await process_and_update_ner_results(table_id, data)
@@ -89,26 +90,36 @@ async def predict_ner(table_id: str, file: UploadFile):
     if not save_result:
         raise HTTPException(status_code=500, detail=f"Failed to save or update NER data for table_id: {table_id}")
     
-    return {"message": "Data uploaded and processed successfully", "details": save_result}
+    return {"message": "Data uploaded and processed successfully", "details": save_result}  
 
-# Function to process CSV data and return it as a dictionary
-async def process_csv_data(file: UploadFile):
+async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
+    """
+    Processes a file based on its extension (CSV, Excel, JSON) into a dictionary structure.
+    """
+    file_content = await file.read()
     try:
-        content = await file.read()
-        content_str = content.decode("utf-8")  # Assuming UTF-8 encoding
-        
-        # Convert string content into a pandas DataFrame (semicolon-separated values)
-        data = pd.read_csv(StringIO(content_str), sep=";")  
+        if file_extension == 'csv':
+            content_str = file_content.decode("utf-8")  # Decode byte content to string
+            data = pd.read_csv(StringIO(content_str), sep=";")  # Assuming semicolon delimiter
+        elif file_extension in ['xlsx', 'xls']:
+            data = pd.read_excel(file_content)
+        elif file_extension == 'json':
+            content_str = file_content.decode("utf-8")
+            data = pd.read_json(StringIO(content_str))
+        else:
+            raise ValueError("Unsupported file format")
+
         
         if data.empty:
-            raise ValueError("No valid data found in CSV")
-        
-        # Convert DataFrame columns into a dictionary of lists (for further processing)
+            raise ValueError(f"No valid data found in {file_extension.upper()} file")
+
         column_data = {col: [str(value) for value in data[col]] for col in data.columns}
+        logger.info(f"Processed {file_extension.upper()} file {file} with columns: {list(data.columns)}")
         return column_data
+    
     except Exception as e:
-        logger.error(f"Error processing CSV file: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing CSV file: {str(e)}")
+        logger.error(f"Error processing {file_extension.upper()} file '{file}': {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing {file_extension.upper()} file: {str(e)}")
 
 # Function to process NER results and update them in ClickHouse
 async def process_and_update_ner_results(table_id: str, data: dict):

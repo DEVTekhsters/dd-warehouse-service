@@ -33,22 +33,6 @@ async def save_file(file: UploadFile, temp_dir: str):
         logger.error(f"Failed to save file '{file.filename}': {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save file '{file.filename}': {str(e)}")
 
-def process_csv_data(file_path: str) -> Dict:
-    """
-    Processes a CSV file from a file path into a dictionary structure.
-    """
-    try:
-        data = pd.read_csv(file_path, sep=";")
-        if data.empty:
-            raise ValueError("No valid data found in CSV")
-        
-        column_data = {col: [str(value) for value in data[col]] for col in data.columns}
-        logger.info(f"Processed CSV file {file_path} with columns: {list(data.columns)}")
-        return column_data
-    except Exception as e:
-        logger.error(f"Error processing CSV file '{file_path}': {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing CSV file: {str(e)}")
-
 async def process_and_update_ner_results(data: Dict) -> List[Dict]:
     """
     Scans structured data for PII entities and calculates confidence scores.
