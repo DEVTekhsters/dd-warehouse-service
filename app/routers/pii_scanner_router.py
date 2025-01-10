@@ -111,23 +111,42 @@ async def process_file(file_path: str, file_extension: str) -> Dict:
 
 async def process_unstructured_file(file_path: str) -> Dict:
     """
-    Scans unstructured files (e.g., PDF, TXT) for PII data.
+    Scans unstructured files (e.g., PDF, TXT, DOCX) for PII data.
     """
     try:
-        logger.info(f"Scanning unstructured file: {file_path}")
+        logger.info(f"Starting scan for unstructured file: {file_path}")
+        
+        # Logging the size of the file for tracking
+        file_size = os.path.getsize(file_path)
+        logger.info(f"File size: {file_size} bytes")
+        
+        # Initiating the scan
+        logger.info("Calling PII scanner with provided file.")
         result = await pii_scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
+        
+        # Logging the raw result from the scanner
+        logger.debug(f"Raw scan result: {result}")
+        
         if result:
+            # Extracting and logging detected entity types
             entity_types = list({
                 entity['type']
                 for item in result
+                if "entity_detected" in item
                 for entity in item['entity_detected']
             })
             logger.info(f"Entities detected in unstructured file: {entity_types}")
             return {"entity_types": entity_types}
+        
+        # Logging if no entities are detected
+        logger.warning("No entities detected in the unstructured file.")
         return {"entity_types": []}
+    
     except Exception as e:
-        logger.error(f"Error processing unstructured file '{file_path}': {str(e)}")
+        # Logging error with traceback for deeper analysis
+        logger.error(f"Error processing unstructured file '{file_path}': {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing unstructured file: {str(e)}")
+
 
 def get_human_readable_size(file_path: str) -> str:
     size_bytes = os.path.getsize(file_path)
