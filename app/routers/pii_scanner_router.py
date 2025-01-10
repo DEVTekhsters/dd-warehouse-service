@@ -11,9 +11,6 @@ import json
 import logging
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
-import nltk
-nltk.download('punkt_tab')
-
 
 router = APIRouter()
 pii_scanner = PIIScanner()
