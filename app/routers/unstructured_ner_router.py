@@ -10,6 +10,9 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
+import nltk
+nltk.download('punkt_tab')
+
 
 
 # Setup logging
