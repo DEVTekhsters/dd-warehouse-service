@@ -13,6 +13,7 @@ from collections import defaultdict
 from typing import Dict
 import asyncio
 import pandas as pd
+import csv
 from io import StringIO
 
 router = APIRouter()
@@ -100,7 +101,13 @@ async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
     try:
         if file_extension == 'csv':
             content_str = file_content.decode("utf-8")  # Decode byte content to string
-            data = pd.read_csv(StringIO(content_str), sep=";")  # Assuming semicolon delimiter
+            # Detect the delimiter automatically
+            sniffer = csv.Sniffer()
+            delimiter = sniffer.sniff(content_str).delimiter
+            
+            # Read CSV with detected delimiter
+            data = pd.read_csv(StringIO(content_str), sep=delimiter)
+            
         elif file_extension in ['xlsx', 'xls']:
             data = pd.read_excel(file_content)
         elif file_extension == 'json':
@@ -148,9 +155,13 @@ async def process_and_update_ner_results(table_id: str, data: dict):
                         'confidence_score': confidence_score,
                         'detected_entities': {k: v for k, v in entity_counts.items()}
                     }
-
+            print(f"NER results for column {column_name}: {ner_results}")        
+            if isinstance(ner_results, dict) and 'highest_label' in ner_results:
+                detected_entity = ner_results['highest_label']
+            else:
+                detected_entity = 'NA'
             # Update the NER results in ClickHouse
-            update_result = await update_entity_for_column(table_id, column_name, ner_results)
+            update_result = await update_entity_for_column(table_id, column_name, ner_results, detected_entity)
             if not update_result:
                 logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
                 return False
@@ -161,7 +172,7 @@ async def process_and_update_ner_results(table_id: str, data: dict):
         return False
 
 # Function to update NER results for each column in ClickHouse
-async def update_entity_for_column(table_id, column_name, ner_results):
+async def update_entity_for_column(table_id, column_name, ner_results, detected_entity):
     try:
         client = get_clickhouse_client()
         
@@ -174,7 +185,7 @@ async def update_entity_for_column(table_id, column_name, ner_results):
             "table_id": table_id,
             "column_name": column_name,
             "json": json.dumps(ner_results),
-            "detected_entity": ner_results['highest_label']
+            "detected_entity": detected_entity
         }
 
         # Execute query to insert/update data
