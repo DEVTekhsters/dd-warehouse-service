@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
-
+import nltk
+nltk.download('averaged_perceptron_tagger_eng')
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ async def process_unstructured_files(data_received: DataReceived, background_tas
     # Start the background task to process files
     background_tasks.add_task(process_files_from_minio, bucket_name, folder_name, data_received)
 
-    return {"message": "Files are being processed in the background."}
+    return {f"results": "Processing started for the folder: {folder_name}"}
 
 # Function to process files one by one from MinIO
 async def process_files_from_minio(bucket_name: str, folder_name: str, data_received: DataReceived):
@@ -111,8 +112,8 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     try:
         # Initialize the PII scanner
         scanner = PIIScanner()
+
         result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
-        print(result)
 
         if not result:
             logger.error(f"No PII detected in the file {file_name}. Skipping further processing.")
@@ -128,12 +129,12 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
             "region": data_received.region,
         }
         final_result = {entity['type'] for item in result for entity in item['entity_detected']}
-
+        
         # Prepare the final result in the required format
-        unique_entity_types= {
+        unique_entity_types = {
             "entity_types": list(final_result)
         }
-
+        print("Unique entity types:", unique_entity_types)
         # Save results to the database (ClickHouse)
         save_unstructured_ner_data(unique_entity_types, metadata)
 
