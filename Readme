@@ -1,1 +1,44 @@
-Readme
+NER Pipeline with NLTK Integration
+Overview
+
+This project involves building a Named Entity Recognition (NER) pipeline, utilizing NLTK (Natural Language Toolkit) resources for text processing. The pipeline is designed to process textual data, perform tokenization, remove stopwords, and apply part-of-speech tagging. Additionally, the project integrates multiple NLTK corpora and models for different text processing tasks.
+Requirements
+
+    Python 3.11 (or higher)
+    NLTK library
+    Pandas
+    ClickHouse (for data storage)
+    Docker (for containerization)
+
+Installation
+
+    Clone this repository:
+
+git clone <your-repository-url>
+cd <your-repository-directory>
+
+Create and activate a Python virtual environment:
+
+python3.11 -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Install NLTK resources:
+
+In your Python environment, run the following:
+
+import nltk
+
+# Download required NLTK resources
+nltk.download('punkt')  # Tokenizer model
+nltk.download('stopwords')  # Common stop words
+nltk.download('averaged_perceptron_tagger')  # Part-of-speech tagging model
+nltk.download('wordnet')  # WordNet lexical database
+nltk.download('omw')  # Open Multilingual WordNet
+nltk.download('movie_reviews')  # Movie review corpus
+nltk.download('reuters')  # Reuters corpus
+nltk.download('treebank')  # Annotated treebank corpus
+nltk.download('universal_tagset')  # Universal part-of-speech tagset
