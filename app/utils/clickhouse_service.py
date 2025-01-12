@@ -32,6 +32,7 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         raise ValueError(f"Unknown entity type: {entity_type}")
 
     # Ensure the identifier column exists and is converted to string (in case of float or NaN values)
+    print(data.columns)
     if identifier_column not in data.columns:
         logger.error(f"The DataFrame must contain a '{identifier_column}' column for updates.")
         raise ValueError(f"The DataFrame must contain a '{identifier_column}' column for updates.")
@@ -42,6 +43,7 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
 
     # Ensure all identifiers are treated as strings
     data[identifier_column] = data[identifier_column].astype(str)
+    print(data[identifier_column])
     logger.info(f"Converted '{identifier_column}' to string for all rows.")
 
     # Insert the data in batches    
@@ -90,6 +92,7 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             rows = []  # Initialize an empty list to collect rows
             for index in batch_data.index:
                 row = batch_data.loc[index]
+                row = row.to_dict()
                 logger.info(f"row:{row}")
                 logger.info(f"row_json :{row['json']}")
                 data_host = json.loads(row['json'])  # JSON is also the column name in data
@@ -102,8 +105,14 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
                 source = host_parts[4] if len(host_parts) > 4 else "N/A"
 
                 # Extract other fields directly from the DataFrame
-                dbservice_entity_id = row['id']  # 'id' is the actual column name in data
-                dbservice_entity_name = row['name']  # 'name' is the actual column name in data
+                # Extract fields based on entity_type
+                if entity_type == "profiler_data_time_series":
+                    dbservice_entity_id = row['entityFQNHash']  # 'entityFQNHash' is the actual column name for profiler_data_time_series
+                    dbservice_entity_name = row['name'] if 'name' in row else "N/A"  # 'name' might not be present in profiler_data_time_series
+                else:
+                    dbservice_entity_id = row['id']  # 'id' is the actual column name for other tables
+                    dbservice_entity_name = row['name']  # 'name' is the actual column name for other tables
+
 
                 # Log the hostPort and extracted parts
                 logger.info(f"Host port: {host_port}, Region: {region}, Source: {source}")

@@ -3,21 +3,16 @@ import pandas as pd
 from fastapi import UploadFile
 import csv
 
-def process_csv(file: UploadFile) -> pd.DataFrame:
+def process_csv(file: UploadFile, sep: str = ";") -> pd.DataFrame:
     """
     Process the uploaded CSV file and convert it to a pandas DataFrame.
     """
     # Read a few lines to detect the delimiter
-    sample = file.file.read(1024).decode('utf-8')
-    file.file.seek(0)
-    sniffer = csv.Sniffer()
-    delimiter = sniffer.sniff(sample).delimiter
-    
-    df = pd.read_csv(file.file, sep=delimiter)
+
+    df = pd.read_csv(file.file, sep=sep,index_col=False)
+    print(df)
 
     # Convert the 'timestamp' column to a readable date-time format
     # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
-    
-    print(df)
     
     return df
