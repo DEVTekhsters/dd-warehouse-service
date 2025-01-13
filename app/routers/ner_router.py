@@ -1,5 +1,4 @@
-from fastapi import APIRouter, UploadFile, HTTPException, BackgroundTasks
-from app.utils.csv_processor import process_csv
+from fastapi import APIRouter, UploadFile, HTTPException
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 import clickhouse_connect
@@ -30,50 +29,6 @@ def get_clickhouse_client():
         database='default'
     )
 
-# # Asynchronous function to determine category and insert data into ClickHouse
-# async def get_category_and_insert_data(element: str, parameter_value: str):
-#     data_categories = {
-#         "Personal": ["AADHAAR", "ADDRESS", "DRIVER LICENSE", "EMAIL_ADDRESS", "GENDER", "IMEI", "IMSI", "IP_ADDRESS", 
-#                      "LOCATION", "MAC_ADDRESS", "NATIONALITY", "PASSPORT", "PASSWORD", "PERSON", "PHONE_NUMBER", 
-#                      "POBOX", "RATION CARD NUMBER", "TITLE", "VEHICLE IDENTIFICATION NUMBER", "VID", "VOTERID", 
-#                      "ZIPCODE", "RELIGION", "POLITICAL OPINION", "SEXUAL ORIENTATION"],
-#         "Financial": ["BANK_ACCOUNT_NUMBER", "BANK_CARD", "CVV", "GST_NUMBER", "IFSC", "PAN", "UID", "UPI_ID"],
-#         "Medical": ["MEDICAL_LICENSE", "BIOMETRIC"],
-#         "System Data": ["DATE_TIME"]
-#     }
-
-#     table_id = "service_id_1"
-#     service_type = "service_type_1"
-
-#     element = element.upper()
-#     category = "Unknown Category"
-    
-#     # Determine the category based on the element
-#     for cat, elements in data_categories.items():
-#         if element in elements:
-#             category = cat
-#             break
-
-#     # Prepare query to insert data into ClickHouse
-#     query = """
-#     INSERT INTO data_element (table_id, service_type, parameter_name, parameter_value)
-#     VALUES (%(table_id)s, %(service_type)s, %(parameter_name)s, %(parameter_value)s)
-#     """
-#     params = {
-#         "table_id": table_id,
-#         "service_type": service_type,
-#         "parameter_name": element,
-#         "parameter_value": parameter_value
-#     }
-
-#     client = get_clickhouse_client()
-#     try:
-#         # Execute the query to insert data
-#         await client.command(query, params)
-#         logger.info(f"Successfully inserted data for {element}.")
-#     except Exception as e:
-#         logger.error(f"Error inserting data into ClickHouse: {e}")
-#         raise HTTPException(status_code=500, detail="Error inserting data into the database.")
 
 # Main endpoint to process uploaded CSV file and perform NER
 @router.post("/process/{table_id}")
@@ -103,8 +58,7 @@ async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
             content_str = file_content.decode("utf-8")  # Decode byte content to string
             # Detect the delimiter automatically
             sniffer = csv.Sniffer()
-            delimiter = sniffer.sniff(content_str).delimiter
-            
+            delimiter = sniffer.sniff(content_str).delimiter              # Detect delimiter automatically only for testing
             # Read CSV with detected delimiter
             data = pd.read_csv(StringIO(content_str), sep=delimiter)
             
@@ -155,13 +109,16 @@ async def process_and_update_ner_results(table_id: str, data: dict):
                         'confidence_score': confidence_score,
                         'detected_entities': {k: v for k, v in entity_counts.items()}
                     }
-            print(f"NER results for column {column_name}: {ner_results}")        
+            logger.info(f"NER results for column {column_name}: {ner_results}")        
             if isinstance(ner_results, dict) and 'highest_label' in ner_results:
                 detected_entity = ner_results['highest_label']
             else:
                 detected_entity = 'NA'
+
             # Update the NER results in ClickHouse
-            update_result = await update_entity_for_column(table_id, column_name, ner_results, detected_entity)
+            data_element = await fetch_data_element_category(detected_entity)
+            update_result = await update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element)
+            
             if not update_result:
                 logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
                 return False
@@ -170,22 +127,49 @@ async def process_and_update_ner_results(table_id: str, data: dict):
     except Exception as e:
         logger.error(f"Error processing NER results: {str(e)}")
         return False
+#Adding data elemnt category to the NER results
+#Function to fetch data element category from ClickHouse
+
+async def fetch_data_element_category(detected_entity):
+    try:
+        client = get_clickhouse_client()
+        data_element_query = f"""SELECT parameter_name
+        FROM data_element
+        WHERE has(parameter_value, '{detected_entity}');"""
+
+        # Execute query to fetch data element category
+        result = client.query(data_element_query)
+        
+        # Check if result is not empty and fetch the first row
+        if result.result_rows:
+            category = result.result_rows[0][0]
+            logger.info(f"Data element category for {detected_entity}: {category}")
+            return category
+        else:
+            logger.info(f"No data element category found for {detected_entity}")
+            return "N/A"
+        
+    except Exception as e:
+        logger.info(f"Error fetching data element category from ClickHouse: {str(e)}")
+        return f"Error: {str(e)}"
+
 
 # Function to update NER results for each column in ClickHouse
-async def update_entity_for_column(table_id, column_name, ner_results, detected_entity):
+async def update_entity_for_column(table_id, column_name, ner_results, detected_entity,data_element):
     try:
         client = get_clickhouse_client()
         
         query = """
-        INSERT INTO column_ner_results (table_id, column_name, json, detected_entity)
-        VALUES (%(table_id)s, %(column_name)s, %(json)s, %(detected_entity)s)
+        INSERT INTO column_ner_results (table_id, column_name, json, detected_entity, data_element)
+        VALUES (%(table_id)s, %(column_name)s, %(json)s, %(detected_entity)s, %(data_element)s)
         """
         
         params = {
             "table_id": table_id,
             "column_name": column_name,
             "json": json.dumps(ner_results),
-            "detected_entity": detected_entity
+            "detected_entity": detected_entity,
+            "data_element": data_element
         }
 
         # Execute query to insert/update data
