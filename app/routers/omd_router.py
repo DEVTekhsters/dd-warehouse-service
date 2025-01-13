@@ -13,8 +13,6 @@ async def upload_data(entity_type: str, file: UploadFile):
 
     # Process the CSV file
     data = process_csv(file)
-    print(data)
-
     # Send the data to ClickHouse
     result = save_omd_table_data(entity_type, data)
-    return {"message": "Data uploaded successfully", "details": result}
+    return {"message": "Data uploaded successfully", "details": {"entity_type": entity_type, "result": result}}
