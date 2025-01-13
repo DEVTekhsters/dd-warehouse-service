@@ -6,10 +6,12 @@ from pathlib import Path
 from minio import Minio
 from dotenv import load_dotenv
 from client_connect import Connection
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
+import clickhouse_connect
 import nltk
 nltk.download('averaged_perceptron_tagger_eng')
 
@@ -46,6 +48,14 @@ minio_client = Minio(
         secret_key=MINIO_SECRET_KEY,
         secure=MINIO_SECURE  # This will automatically be a boolean
     )
+def get_clickhouse_client():
+    return clickhouse_connect.get_client(
+        host='148.113.6.50',
+        port="8123",
+        username='default',
+        password='',
+        database='default'
+    )
 
 # FastAPI route to process unstructured files in the background
 @router.post("/process_unstructured")
@@ -56,7 +66,7 @@ async def process_unstructured_files(data_received: DataReceived, background_tas
     # Start the background task to process files
     background_tasks.add_task(process_files_from_minio, bucket_name, folder_name, data_received)
 
-    return {f"results": "Processing started for the folder: {folder_name}"}
+    return {f"results": f"Processing started for the folder: {folder_name}"}
 
 # Function to process files one by one from MinIO
 async def process_files_from_minio(bucket_name: str, folder_name: str, data_received: DataReceived):
@@ -117,8 +127,9 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
 
         if not result:
             logger.error(f"No PII detected in the file {file_name}. Skipping further processing.")
-            raise ValueError("No PII data detected in the file.")
 
+            raise ValueError("No PII data detected in the file.")
+        
         # Prepare metadata for the processed file
         metadata = {
             "source_bucket": data_received.source_bucket,
@@ -128,15 +139,36 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
             "source": data_received.source_type,
             "region": data_received.region,
         }
-        final_result = {entity['type'] for item in result for entity in item['entity_detected']}
-        
-        # Prepare the final result in the required format
+        total_entities = 0
+        entity_counts = defaultdict(int)
+        final = []
+        # Process the NER results
+        if isinstance(result, list):  # Ensure result is a list
+            for item in result:
+                if isinstance(item, dict):  # Ensure each item is a dictionary
+                    # Check for the 'entity_detected' key in the dictionary
+                    detected_entities = item.get("entity_detected", [])
+                    if isinstance(detected_entities, list):  # Ensure it's a list
+                        for entity in detected_entities:
+                            if isinstance(entity, dict):  # Each entity should be a dictionary
+                                entity_type = entity.get("type")
+                                final.append(entity_type)
+                                if entity_type:
+                                    entity_counts[entity_type] += 1
+                                    total_entities += 1
+            highest_label = None
+            if entity_counts:
+                highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
+
+            
         unique_entity_types = {
-            "entity_types": list(final_result)
-        }
-        print("Unique entity types:", unique_entity_types)
-        # Save results to the database (ClickHouse)
-        save_unstructured_ner_data(unique_entity_types, metadata)
+                "entity_types": list(set(final))
+            }
+        
+        logger.info(f"PII results for unstructued file {file_name}: {unique_entity_types}")
+        data_element = await data_element_category(highest_label)    
+        # # Save results to the database (ClickHouse)
+        save_unstructured_ner_data(unique_entity_types, metadata, data_element)
 
         return {"message": "File processed successfully", "pii_results": result, "metadata": metadata}
 
@@ -144,9 +176,32 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
         logger.error(f"Error processing file {file_name}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
     
+async def data_element_category(detected_entity):
+
+    logger.info("Processing result in data_element_category")
+
+    try:
+        client = get_clickhouse_client()
+        data_element_query = f"""SELECT parameter_name FROM data_element WHERE has(parameter_value, '{detected_entity}');"""
+
+        result = client.query(data_element_query)
+        
+        if result.result_rows:
+            category = result.result_rows[0][0]
+            logger.info(f"Data element category for {detected_entity}: {category}")
+            return category
+        else:
+            logger.info(f"No data element category found for {detected_entity}")
+            return "N/A"
+
+    except Exception as e:
+        logger.error(f"Error fetching data element category from ClickHouse: {str(e)}")
+        return f"Error: {str(e)}"
+
+        
 
 # Save NER results to ClickHouse database (example)
-def save_unstructured_ner_data(unique_entity_types, metadata):
+def save_unstructured_ner_data(unique_entity_types, metadata, data_element):
     """Save the processed NER results into the database (e.g., ClickHouse)."""
     if not unique_entity_types:
         logger.error("No PII data detected in the file.")
@@ -160,10 +215,11 @@ def save_unstructured_ner_data(unique_entity_types, metadata):
         "source_bucket": metadata.get("source_bucket"),
         "file_name": metadata.get("file_name"),
         "json": unique_types_json,
+        "data_element": data_element,
         "file_size": metadata.get("file_size"),
         "file_type": metadata.get("file_type"),
         "source": metadata.get("source"),
-        "region": metadata.get("region"),
+        "region": metadata.get("region")
     }
 
     # Database connection and insertion logic here
@@ -172,8 +228,8 @@ def save_unstructured_ner_data(unique_entity_types, metadata):
 
     try:
         insert_query = """
-        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, file_size, file_type, source, region)
-        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(file_size)s, %(file_type)s, %(source)s, %(region)s)
+        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, data_element, file_size, file_type, source, region)
+        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(region)s)
         """
         client.command(insert_query, data_to_insert)
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
