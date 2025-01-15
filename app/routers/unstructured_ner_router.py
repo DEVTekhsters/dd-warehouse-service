@@ -123,11 +123,10 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
         # Initialize the PII scanner
         scanner = PIIScanner()
 
-        result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
+        json_result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
 
-        if not result:
+        if not json_result:
             logger.error(f"No PII detected in the file {file_name}. Skipping further processing.")
-
             raise ValueError("No PII data detected in the file.")
         
         # Prepare metadata for the processed file
@@ -139,43 +138,47 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
             "source": data_received.source_type,
             "region": data_received.region,
         }
-        total_entities = 0
+
         entity_counts = defaultdict(int)
-        final = []
+        total_entities = 0
+        ner_results = 'NA'
+            
         # Process the NER results
-        if isinstance(result, list):  # Ensure result is a list
-            for item in result:
-                if isinstance(item, dict):  # Ensure each item is a dictionary
-                    # Check for the 'entity_detected' key in the dictionary
-                    detected_entities = item.get("entity_detected", [])
-                    if isinstance(detected_entities, list):  # Ensure it's a list
+        if json_result:
+            for result in json_result:
+                if isinstance(result, dict) and "entity_detected" in result:
+                    detected_entities = result["entity_detected"]
+                    if isinstance(detected_entities, list):
                         for entity in detected_entities:
-                            if isinstance(entity, dict):  # Each entity should be a dictionary
+                            if isinstance(entity, dict):
                                 entity_type = entity.get("type")
-                                final.append(entity_type)
                                 if entity_type:
                                     entity_counts[entity_type] += 1
                                     total_entities += 1
-            highest_label = None
+
             if entity_counts:
                 highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
-
-            
-        unique_entity_types = {
-                "entity_types": list(set(final))
-            }
+                confidence_score = round(max(entity_counts.values()) / total_entities, 2)
+                ner_results = {
+                    'highest_label': highest_label,
+                    'confidence_score': confidence_score,
+                    'detected_entities': {k: v for k, v in entity_counts.items()}
+                }
+        print(ner_results)
+        logger.info(f"PII results for unstructured file {file_name}: {ner_results}")
         
-        logger.info(f"PII results for unstructued file {file_name}: {unique_entity_types}")
-        data_element = await data_element_category(highest_label)    
-        # # Save results to the database (ClickHouse)
-        save_unstructured_ner_data(unique_entity_types, metadata, data_element)
+        # Fetch data element category
+        data_element = await data_element_category(highest_label)
+        
+        # Save results to the database (ClickHouse)
+        save_unstructured_ner_data(ner_results, metadata, data_element, highest_label)
 
-        return {"message": "File processed successfully", "pii_results": result, "metadata": metadata}
+        return {"message": "File processed successfully", "pii_results": json_result, "metadata": metadata}
 
     except Exception as e:
         logger.error(f"Error processing file {file_name}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-    
+     
 async def data_element_category(detected_entity):
 
     logger.info("Processing result in data_element_category")
@@ -200,21 +203,22 @@ async def data_element_category(detected_entity):
 
         
 
-# Save NER results to ClickHouse database (example)
-def save_unstructured_ner_data(unique_entity_types, metadata, data_element):
+# Save NER results to ClickHouse database (example) 
+def save_unstructured_ner_data(ner_results, metadata, data_element, detected_entity):
     """Save the processed NER results into the database (e.g., ClickHouse)."""
-    if not unique_entity_types:
+    if not ner_results:
         logger.error("No PII data detected in the file.")
         raise ValueError("No PII data detected")
 
     # Convert the results to JSON
-    unique_types_json = json.dumps(unique_entity_types)
+    ner_results_json = json.dumps(ner_results)
 
     # Insert data into the database (example query)
     data_to_insert = {
         "source_bucket": metadata.get("source_bucket"),
         "file_name": metadata.get("file_name"),
-        "json": unique_types_json,
+        "json": ner_results_json,
+        "detected_entity":detected_entity,
         "data_element": data_element,
         "file_size": metadata.get("file_size"),
         "file_type": metadata.get("file_type"),
@@ -228,11 +232,11 @@ def save_unstructured_ner_data(unique_entity_types, metadata, data_element):
 
     try:
         insert_query = """
-        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, data_element, file_size, file_type, source, region)
-        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(region)s)
+        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, file_size, file_type, source, region)
+        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s,%(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(region)s)
         """
         client.command(insert_query, data_to_insert)
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
     except Exception as e:
         logger.error(f"Error inserting data into the database: {e}")
-        raise HTTPException(status_code=500, detail="Error inserting data into the database")   
+        raise HTTPException(status_code=500, detail="Error inserting data into the database")
