@@ -1,3 +1,5 @@
+# SERVICE-CONNECTOR-DATABASE/SCHEMAS-TABLES-COLUMNS
+
 structured_view_location = """
 CREATE VIEW IF NOT EXISTS structured_view_location AS
 SELECT 
@@ -11,7 +13,7 @@ CREATE VIEW IF NOT EXISTS structured_view_data_management AS
 SELECT 
     COUNT(DISTINCT serviceType) AS total_services,
     COUNT(DISTINCT updatedBy) AS total_system_owner,
-    COUNT(DISTINCT splitByString('.', entityFQNHash)[2]) AS total_databases,
+    COUNT(DISTINCT splitByString('.', entityFQNHash)[3]) AS total_databases,
     COUNT(DISTINCT splitByString('.', entityFQNHash)[3]) AS total_schemas
 FROM 
     profiler_data_time_series p
@@ -22,7 +24,7 @@ JOIN
 structured_view_data_details = """ 
 CREATE VIEW IF NOT EXISTS structured_view_data_details AS 
 SELECT 
-    COUNT(de.parameter_name) AS total_data_elements,
+    COUNT(c.detected_entity) AS total_data_elements,
     COUNT(DISTINCT c.detected_entity) AS total_data_element_type,
     COUNT(DISTINCT de.parameter_name) AS total_data_element_category
 FROM 
@@ -40,7 +42,7 @@ SELECT
     COUNT(DISTINCT db.serviceType) AS total_data_systems,
     COUNT(DISTINCT arrayElement(splitByString('.', p.entityFQNHash), 4)) AS total_tables,
     COUNT(DISTINCT arrayElement(splitByString('.', p.entityFQNHash), 3)) AS total_schemas,
-    COUNT(DISTINCT arrayElement(splitByString('.', p.entityFQNHash), 2)) AS total_databases,
+    COUNT(DISTINCT arrayElement(splitByString('.', p.entityFQNHash), 3)) AS total_databases,
     COUNT(DISTINCT c.detected_entity) AS total_data_elements
 FROM 
     dbservice_entity_meta_info d
@@ -80,20 +82,28 @@ CREATE VIEW IF NOT EXISTS structured_view_data_element_types AS
 SELECT
     c.detected_entity AS data_element_types,                  -- its total number of times it has appered 
     COUNT(*) AS count_data_element_types,
-    COUNT(DISTINCT splitByString('.', CAST(p.entityFQNHash AS String))[5]) AS total_columns,
-    COUNT(DISTINCT splitByString('.', CAST(p.entityFQNHash AS String))[4]) AS total_tables,
+    COUNT(DISTINCT c.column_name) AS total_columns,
+    COUNT(DISTINCT t.id) AS total_tables,
     COUNT(DISTINCT splitByString('.', CAST(p.entityFQNHash AS String))[3]) AS total_schemas,
-    COUNT(DISTINCT splitByString('.', CAST(p.entityFQNHash AS String))[2]) AS total_databases,
+    COUNT(DISTINCT splitByString('.', CAST(p.entityFQNHash AS String))[3]) AS total_databases,
     COUNT(DISTINCT e.serviceType) AS total_data_systems,
     COUNT(DISTINCT d.region) AS total_locations
 FROM 
     column_ner_results c
 LEFT JOIN 
-    dbservice_entity_meta_info d ON d.dbservice_entity_id = c.table_id
+    table_entity t
+    ON t.id = c.table_id
 LEFT JOIN 
-    dbservice_entity e ON e.id = d.dbservice_entity_id
+    dbservice_entity e ON e.nameHash = splitByString('.', CAST(t.fqnHash AS String))[1]
 LEFT JOIN 
-    profiler_data_time_series p ON e.nameHash = splitByString('.', CAST(p.entityFQNHash AS String))[1]
+    profiler_data_time_series p ON splitByString('.', CAST(p.entityFQNHash AS String))[1]= e.nameHash 
+LEFT JOIN 
+    dbservice_entity_meta_info d
+    ON e.id = CASE 
+                WHEN position(d.dbservice_entity_id, '.') > 0 
+                THEN substring(d.dbservice_entity_id, 1, position(d.dbservice_entity_id, '.') - 1)
+                ELSE d.dbservice_entity_id
+              END
 GROUP BY 
     c.detected_entity;
 
@@ -129,3 +139,35 @@ GROUP BY
     d.region;
 
 """
+
+
+
+import clickhouse_connect
+
+# Establish connection to ClickHouse
+client = clickhouse_connect.get_client(
+    host='148.113.6.50',
+    port="8123",
+    username='default',
+    password='',
+    database='default'
+)
+# Execute view creation queries
+try:
+    # client.command("DROP VIEW IF EXISTS structured_view_location;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_management;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_details;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_locations;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_element_categories;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_element_types;")
+    # client.command("DROP VIEW IF EXISTS structured_view_data_shankey;")
+    client.command(structured_view_location)
+    client.command(structured_view_data_management)
+    client.command(structured_view_data_details)
+    client.command(structured_view_data_locations)
+    client.command(structured_view_data_element_categories)
+    client.command(structured_view_data_element_types)
+    client.command(structured_view_data_shankey)
+    print("Views created successfully.")
+except Exception as e:
+    print(f"An error occurred: {e}")
