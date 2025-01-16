@@ -2,6 +2,7 @@ from client_connect import Connection
 import pandas as pd
 import logging
 import json
+
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -128,6 +129,9 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             client.insert(meta_info_table, rows, column_names=column_names)
             logger.info(f"Inserted batch {i // batch_size + 1} into table '{meta_info_table}'")
 
+        if entity_type == "profiler_data_time_series":
+            profiler_meta_data(ids, batch_size, identifier_column, data, client)
+            logger.info("Successfully deleted/inserted data in profiler_metadata table")
 
         logger.info(f"Successfully inserted or updated {len(data[identifier_column])} rows in table '{table_name}' and '{meta_info_table}'")
         return {"table": table_name, "rows_inserted_or_updated": len(data[identifier_column])}
@@ -135,3 +139,63 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
     except Exception as e:
         logger.error(f"Error processing data: {e}")
         return {"error": str(e)}
+import datetime
+
+def profiler_meta_data(ids, batch_size, identifier_column, data, client):
+    table_name = "profiler_metadata"
+    for i in range(0, len(ids), batch_size):
+        # Deleting existing records in batches
+        batch_ids = ids[i:i + batch_size]
+        id_conditions = ",".join([f"'{row_id}'" for row_id in batch_ids])
+        delete_query = f"ALTER TABLE {table_name} DELETE WHERE {identifier_column} IN ({id_conditions})"
+        logger.debug(f"Executing query: {delete_query}")
+        try:
+            # Uncomment this to execute the query
+            client.command(delete_query)
+            logger.info(f"Deleted batch {i // batch_size + 1} from table '{table_name}'")
+        except Exception as delete_error:
+            logger.error(f"Error during delete operation: {delete_error}")
+
+    # Insert data in batches
+    for i in range(0, len(data), batch_size):
+        batch_data = data.iloc[i:i + batch_size]
+        column_names = ["entityFQNHash", "rowCount", "timestamp", "sizeInByte", "columnCount", "profileSample", "createDateTime", "profileSampleType"]
+
+        # Filter rows where jsonSchema is "tableProfile"
+        filtered_data = batch_data[batch_data["jsonSchema"] == "tableProfile"]
+
+        if not filtered_data.empty:
+            rows = []
+            for _, row in filtered_data.iterrows():
+                try:
+                    json_data = json.loads(row["json"])
+                    
+                    # Convert createDateTime to Unix timestamp (seconds since epoch)
+                    createDateTime_str = json_data.get("createDateTime")
+                    if createDateTime_str:
+                        createDateTime = datetime.datetime.strptime(createDateTime_str, "%Y-%m-%dT%H:%M:%S.%fZ").timestamp()
+                    else:
+                        createDateTime = None  # Handle case where 'createDateTime' is missing
+
+                    rows.append((
+                        row["entityFQNHash"],
+                        json_data.get("rowCount"),
+                        json_data.get("timestamp"),
+                        json_data.get("sizeInByte"),
+                        json_data.get("columnCount"),
+                        json_data.get("profileSample"),
+                        createDateTime,  # Insert the Unix timestamp here
+                        json_data.get("profileSampleType")
+                    ))
+                except Exception as parse_error:
+                    logger.error(f"Error parsing JSON for row: {row['entityFQNHash']}, error: {parse_error}")
+
+            try:
+                # Uncomment this to execute the insertion
+                client.insert(table_name, rows, column_names=column_names)
+                logger.info(f"Inserted batch {i // batch_size + 1} into table '{table_name}'")
+            except Exception as insert_error:
+                logger.error(f"Error during insert operation: {insert_error}")
+        else:
+            logger.info(f"No rows with jsonSchema='tableProfile' in batch {i // batch_size + 1}")
+
