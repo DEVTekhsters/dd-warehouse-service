@@ -34,6 +34,7 @@ import nltk
 
 # Download required NLTK resources
 nltk.download('punkt')  # Tokenizer model
+nltk.download('punkt_tab')
 nltk.download('stopwords')  # Common stop words
 nltk.download('averaged_perceptron_tagger')  # Part-of-speech tagging model
 nltk.download('wordnet')  # WordNet lexical database
