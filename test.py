@@ -1,10 +1,19 @@
 import clickhouse_connect
 
-client = clickhouse_connect.get_client(host='localhost', username='default', password='')
-# client.command('CREATE TABLE new_table (key UInt32, value String, metric Float64) ENGINE MergeTree ORDER BY key')
-# print(client)
+# Establish connection to ClickHouse
+client = clickhouse_connect.get_client(
+    host='148.113.6.50',
+    port="8123",
+    username='default',
+    password='',
+    database='default'
+)
 
-result = client.query('SELECT max(key), avg(metric) FROM new_table')
-print(result.result_rows)
+# # Query to add a new column to the table
+# alter_query = "ALTER TABLE column_ner_results ADD COLUMN data_element String after json;"
 
-
+# try:
+#     client.command(alter_query)
+#     print("Column 'detected_entity' added successfully.")
+# except Exception as e:
+#     print(f"An error occurred: {e}")
