@@ -2,8 +2,7 @@ NER Pipeline with NLTK Integration
 
 Overview
 
-This repository contains a Named Entity Recognition (NER) pipeline leveraging NLTK (Natural Language Toolkit) resources for advanced text processing. The pipeline handles tokenization, stopword removal, part-of-speech tagging, and structured data ingestion, integrating multiple NLTK corpora and models to achieve these tasks. Processed data is stored in ClickHouse and visualized on a frontend dashboard.
-
+This repository contains a Named Entity Recognition (NER) pipeline leveraging NLTK (Natural Language Toolkit) resources for advanced text processing. 
 Features
 
 - Webhook Integration: Triggered by incoming metadata for unstructured data.
