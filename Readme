@@ -102,7 +102,7 @@ Workflow
 Unstructured Data Processing
 
 1. Receive a webhook with metadata.
-2. Fetch files (Test, Docs, PDFs) from MinIO storage.
+2. Fetch files (Text, Docs, PDFs) from MinIO storage.
 3. Process files using the PII Scanner library.
 4. Map and arrange data into structured formats.
 5. Update or insert data into ClickHouse tables:
