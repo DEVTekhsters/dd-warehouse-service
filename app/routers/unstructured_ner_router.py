@@ -15,7 +15,7 @@ import clickhouse_connect
 from app.constants.file_format import UNSTRUCTURED_FILE_FORMATS
 import nltk
 nltk.download('punkt')
-# nltk.download('punkt-tab')
+nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger_eng')
 
 # Setup logging
