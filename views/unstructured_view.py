@@ -81,3 +81,30 @@ FROM
     ner_unstructured_data
 GROUP BY
     detected_entity;"""
+
+
+
+import clickhouse_connect
+
+# Establish connection to ClickHouse
+client = clickhouse_connect.get_client(
+    host='148.113.6.50',
+    port="8123",
+    username='default',
+    password='',
+    database='default'
+)
+# Execute view creation queries
+try:
+    client.command(unstructured_view_file_format_statistics)
+    client.command(unstructured_view_data_details)
+    client.command(unstructured_view_document_listing)
+    client.command(unstructured_view_data_element_listing)
+    client.command(unstructured_view_data_management)
+    client.command(unstructured_view_region_data_statistics)
+    client.command(unstructured_view_snaky_graph)
+    client.command(unstructured_view_summary)
+    
+    print("Views created for unstructured successfully.")
+except Exception as e:
+    print(f"An error occurred: {e}")
