@@ -14,6 +14,7 @@ import asyncio
 import pandas as pd
 import csv
 from io import StringIO
+from app.constants.file_format import STRUCTURED_FILE_FORMATS
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -52,6 +53,10 @@ async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
     """
     Processes a file based on its extension (CSV, Excel, JSON) into a dictionary structure.
     """
+    if file_extension.lower() not in STRUCTURED_FILE_FORMATS:
+        logger.error(f"Unsupported file format: {file_extension} for{ file} ")
+        raise HTTPException(status_code=400, detail="Unsupported file format")
+
     file_content = await file.read()
     try:
         if file_extension == 'csv':
