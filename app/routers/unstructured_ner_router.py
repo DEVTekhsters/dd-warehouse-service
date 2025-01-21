@@ -12,7 +12,10 @@ from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
 import clickhouse_connect
+from app.constants.file_format import UNSTRUCTURED_FILE_FORMATS
 import nltk
+nltk.download('punkt')
+# nltk.download('punkt-tab')
 nltk.download('averaged_perceptron_tagger_eng')
 
 # Setup logging
@@ -80,7 +83,16 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
 
             # Get the file name
             file_name = obj.object_name
+            file_extension = file_name.split(".")[-1].lower()
+
             logger.info(f"Processing file: {file_name}")
+            # Check if the file extension is in the allowed formats
+            if file_extension not in UNSTRUCTURED_FILE_FORMATS:
+                logger.warning(f"File {file_name} has an unsupported format. Logging and removing it.")
+                log_and_remove_file(bucket_name, file_name, folder_name)
+                continue
+
+            
 
             # Download the file to the local temp directory
             temp_file_path = TEMP_FOLDER / file_name.split("/")[-1]  # Saving with the same file name
@@ -108,8 +120,15 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
         logger.error(f"Error during file processing: {e}")
         raise HTTPException(status_code=500, detail=f"Error during file processing: {str(e)}")
     
+def log_and_remove_file(bucket_name: str, file_name: str, folder_name: str):
+    """Log the file name and remove it from MinIO."""
+    log_file_path = TEMP_FOLDER / f"{folder_name}_unsupported_files.txt"
+    with open(log_file_path, "a") as log_file:
+        log_file.write(f"{file_name}\n")
+    minio_client.remove_object(bucket_name, file_name)
+    logger.info(f"Logged and removed unsupported file: {file_name}")
+   
 
-    
 # Process the file with the NER model (your existing model logic)
 async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     """Process the file with the NER model and PII scanner."""
