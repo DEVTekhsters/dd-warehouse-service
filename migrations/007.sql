@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS ner_unstructured_data
     file_size UInt64,                          
     file_type String,  
     source String,
+    sub_service String,
     region String,                        
     created_at DateTime DEFAULT now(),         
     updated_at DateTime DEFAULT now()          

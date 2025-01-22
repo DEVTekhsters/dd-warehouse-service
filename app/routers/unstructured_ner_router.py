@@ -148,13 +148,20 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
             logger.error(f"No PII detected in the file {file_name}. Skipping further processing.")
             raise ValueError("No PII data detected in the file.")
         
+        source_type = data_received.source_type.split(',')
+
+        # Ensure there are at least two elements in the source_type list
+        source = source_type[0].strip() if len(source_type) > 0 else "N/A"
+        sub_service = source_type[1].strip() if len(source_type) > 1 else "N/A"
+
         # Prepare metadata for the processed file
         metadata = {
             "source_bucket": data_received.source_bucket,
             "file_name": file_name,
             "file_size": file_size,
             "file_type": file_type,
-            "source": data_received.source_type,
+            "source": source,
+            "sub_service": sub_service,
             "region": data_received.region,
         }
 
@@ -242,6 +249,7 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, detected_ent
         "file_size": metadata.get("file_size"),
         "file_type": metadata.get("file_type"),
         "source": metadata.get("source"),
+        "sub_service":metadata.get("sub_service"),
         "region": metadata.get("region")
     }
 
@@ -251,8 +259,8 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, detected_ent
 
     try:
         insert_query = """
-        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, file_size, file_type, source, region)
-        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s,%(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(region)s)
+        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, file_size, file_type, source, sub_service, region)
+        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s,%(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
         """
         client.command(insert_query, data_to_insert)
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
