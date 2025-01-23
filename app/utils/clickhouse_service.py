@@ -129,7 +129,7 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             column_names = ['dbservice_entity_id', 'dbservice_entity_name', 'source', 'region' ]
             
             # Insert the collected rows into the ClickHouse table
-            # client.insert(meta_info_table, rows, column_names=column_names)
+            client.insert(meta_info_table, rows, column_names=column_names)
             logger.info(f"Inserted batch {i // batch_size + 1} into table '{meta_info_table}'")
 
         if entity_type == "profiler_data_time_series":
