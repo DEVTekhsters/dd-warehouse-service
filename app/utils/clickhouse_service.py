@@ -105,6 +105,9 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
                 region = host_parts[2] if len(host_parts) > 2 else "N/A"
                 source = host_parts[4] if len(host_parts) > 4 else "N/A"
 
+                if len(region) < 4:     #REMOVE THIS IN FUTURE only for TESTING CASE
+                    region ="INDIA"
+
                 # Extract other fields directly from the DataFrame
                 # Extract fields based on entity_type
                 if entity_type == "profiler_data_time_series":
@@ -124,9 +127,9 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
 
             # Prepare column names for the insert statement
             column_names = ['dbservice_entity_id', 'dbservice_entity_name', 'source', 'region' ]
-
+            
             # Insert the collected rows into the ClickHouse table
-            client.insert(meta_info_table, rows, column_names=column_names)
+            # client.insert(meta_info_table, rows, column_names=column_names)
             logger.info(f"Inserted batch {i // batch_size + 1} into table '{meta_info_table}'")
 
         if entity_type == "profiler_data_time_series":
