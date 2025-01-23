@@ -16,7 +16,10 @@ from app.constants.file_format import UNSTRUCTURED_FILE_FORMATS
 import nltk
 nltk.download('punkt')
 nltk.download('punkt_tab')
+nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger_eng')
+
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
