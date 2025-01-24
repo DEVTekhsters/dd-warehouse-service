@@ -9,6 +9,7 @@ import asyncio
 import clickhouse_connect
 import json
 import logging
+from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 
@@ -237,13 +238,7 @@ async def save_instant_data(customer_id: int, file_names: List[str], all_final_r
     """
     Saves the processed scan results to a ClickHouse database.
     """
-    client = clickhouse_connect.get_client(
-            host='148.113.6.50',
-            port="8123",
-            username='default',
-            password='',
-            database='default'
-        )
+    client = Connection.client
     try:
         json_output = json.dumps(all_final_results)
         current_time = datetime.now()
