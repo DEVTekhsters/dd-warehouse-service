@@ -22,7 +22,7 @@ services:
     ports:
       - "3000:3000"  # Grafana UI port
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set a password for the admin user
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD} # Set a password for the admin user
     volumes:
       - grafana-data:/var/lib/grafana  # Persist Grafana data
       - ./provisioning:/etc/grafana/provisioning  # Mount provisioning directory
@@ -33,10 +33,22 @@ services:
       - .:/app
     ports:
       - "8002:8000"
+    environment:
+      MINIO_URL: ${MINIO_URL}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      MINIO_SECURE: ${MINIO_SECURE}
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
+      UNSTRUCTURED_FILE_FORMATS: ${UNSTRUCTURED_FILE_FORMATS}
+      STRUCTURED_FILE_FORMATS: ${STRUCTURED_FILE_FORMATS}
+      
 volumes:
   grafana-data:
     external: false  # Mark it as internal to ensure Docker manages the volume
   shared-ch-data:
     external: false  # Same for ClickHouse data
- 
- 

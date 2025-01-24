@@ -1,8 +1,8 @@
 import os
-import clickhouse_connect
+from client_connect import Connection
 
 # Connect to ClickHouse
-client = clickhouse_connect.get_client(host='13.202.114.233', username='default', password='')
+client = Connection.client
 
 # Directory containing migration files
 migration_dir = './migrations'
@@ -31,3 +31,25 @@ for migration in migrations:
             print(f"Applied migration {migration_id}")
 
 print("All migrations applied.")
+
+# Apply views from structured and unstructured 
+
+# Directories containing view definitions
+structured_views_dir = './views/structured'
+unstructured_views_dir = './views/unstructured'
+
+# Apply views in structured folder
+structured_views = [f for f in os.listdir(structured_views_dir) if f.endswith('.sql')]
+for view in structured_views:
+    with open(os.path.join(structured_views_dir, view), 'r') as f:
+        sql = f.read()
+        client.command(sql)
+        print(f"Applied structured view {view}")
+
+# Apply views in unstructured folder
+unstructured_views = [f for f in os.listdir(unstructured_views_dir) if f.endswith('.sql')]
+for view in unstructured_views:
+    with open(os.path.join(unstructured_views_dir, view), 'r') as f:
+        sql = f.read()
+        client.command(sql)
+        print(f"Applied unstructured view {view}")
