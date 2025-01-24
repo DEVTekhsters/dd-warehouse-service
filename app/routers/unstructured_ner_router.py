@@ -123,8 +123,8 @@ def log_and_remove_file(bucket_name: str, file_name: str, folder_name: str):
     log_file_path = TEMP_FOLDER / f"{folder_name}_unsupported_files.txt"
     with open(log_file_path, "a") as log_file:
         log_file.write(f"{file_name}\n")
-    minio_client.remove_object(bucket_name, file_name)
-    logger.info(f"Logged and removed unsupported file: {file_name}")
+    # minio_client.remove_object(bucket_name, file_name)
+    logger.info(f"Logged and Tagged unsupported file in temp folder: {file_name}")
    
 
 # Process the file with the NER model (your existing model logic)
