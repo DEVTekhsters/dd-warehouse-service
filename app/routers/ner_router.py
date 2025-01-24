@@ -11,6 +11,7 @@ import pandas as pd
 import csv
 from io import StringIO
 from client_connect import Connection
+from app.constants.sensitivity_data import SENSITIVITY_MAPPING
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -124,7 +125,9 @@ async def process_and_update_ner_results(table_id: str, data: dict):
 
             # Update the NER results in ClickHouse
             data_element = await fetch_data_element_category(detected_entity)
-            update_result = await update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element)
+            data_sensitivity = await sensitivity_of_deteceted_enetity(detected_entity)
+
+            update_result = await update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element, data_sensitivity)
             
             if not update_result:
                 logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
@@ -181,15 +184,25 @@ async def fetch_data_element_category(detected_entity):
     except Exception as e:
         logger.info(f"Error fetching data element category from ClickHouse: {str(e)}")
         return f"Error: {str(e)}"
-
+    
+async def sensitivity_of_deteceted_enetity(detected_entity):
+    logger.info(f"Fetching sensitivity for detected entity: {detected_entity}")
+    if detected_entity in SENSITIVITY_MAPPING:
+        sensitivity = SENSITIVITY_MAPPING[detected_entity]
+        logger.info(f"Sensitivity for {detected_entity}: {sensitivity}")
+        return sensitivity
+    else:
+        logger.warning(f"Sensitivity for {detected_entity} not found. Returning 'Unknown'.")
+        return "Unknown"
+    
 # Function to update NER results for each column in ClickHouse
-async def update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element):
+async def update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element, data_sensitivity):
     try:
         client = get_clickhouse_client()
         
         query = """
-        INSERT INTO column_ner_results (table_id, column_name, json, detected_entity, data_element)
-        VALUES (%(table_id)s, %(column_name)s, %(json)s, %(detected_entity)s, %(data_element)s)
+        INSERT INTO column_ner_results (table_id, column_name, json, detected_entity, data_element, data_sensitivity)
+        VALUES (%(table_id)s, %(column_name)s, %(json)s, %(detected_entity)s, %(data_element)s, %(data_sensitivity)s)
         """
         
         params = {
@@ -197,7 +210,8 @@ async def update_entity_for_column(table_id, column_name, ner_results, detected_
             "column_name": column_name,
             "json": json.dumps(ner_results),
             "detected_entity": detected_entity,
-            "data_element": data_element
+            "data_element": data_element,
+            "data_sensitivity":data_sensitivity
         }
 
         # Execute query to insert/update data
