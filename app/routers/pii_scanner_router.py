@@ -6,7 +6,6 @@ from uuid import uuid4
 from datetime import datetime
 from collections import defaultdict
 import asyncio
-import clickhouse_connect
 import json
 import logging
 from client_connect import Connection
