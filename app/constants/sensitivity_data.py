@@ -44,5 +44,6 @@ SENSITIVITY_MAPPING = {
     "TITLE": "Low",
     "PERSON": "High",
     "MEDICAL_LICENSE": "High",
+    "US_DRIVER_LICENSE": "Medium",
     "VEHICLE_IDENTIFICATION_NUMBER": "Low"
 }
