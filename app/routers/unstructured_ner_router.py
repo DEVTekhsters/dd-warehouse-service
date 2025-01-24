@@ -1,6 +1,5 @@
 import os
 import json
-import shutil
 import logging
 from pathlib import Path
 from minio import Minio
@@ -11,9 +10,8 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
-import clickhouse_connect
-from app.constants.file_format import UNSTRUCTURED_FILE_FORMATS
 import nltk
+
 nltk.download('punkt')
 nltk.download('punkt_tab')
 nltk.download('stopwords')
@@ -23,6 +21,8 @@ nltk.download('averaged_perceptron_tagger_eng')
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
+# load env file
 load_dotenv()
 
 # Define the temp folder path
@@ -46,6 +46,7 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
 MINIO_SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"  # Ensure it’s a boolean
 
+UNSTRUCTURED_FILE_FORMATS = os.getenv("UNSTRUCTURED_FILE_FORMATS").split(',')
 
 # Initialize MinIO client
 minio_client = Minio(
@@ -55,13 +56,7 @@ minio_client = Minio(
         secure=MINIO_SECURE  # This will automatically be a boolean
     )
 def get_clickhouse_client():
-    return clickhouse_connect.get_client(
-        host='148.113.6.50',
-        port="8123",
-        username='default',
-        password='',
-        database='default'
-    )
+    return Connection.client 
 
 # FastAPI route to process unstructured files in the background
 @router.post("/process_unstructured")

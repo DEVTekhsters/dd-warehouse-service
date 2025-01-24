@@ -1,45 +1,47 @@
 from fastapi import APIRouter, UploadFile, HTTPException
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
-import clickhouse_connect
 import logging
-import tempfile
 import os
 import json
-import uuid
-from datetime import datetime
+from dotenv import load_dotenv
 from collections import defaultdict
 from typing import Dict
-import asyncio
 import pandas as pd
 import csv
 from io import StringIO
-from app.constants.file_format import STRUCTURED_FILE_FORMATS
+from client_connect import Connection
 
-router = APIRouter()
+# Setup logging
 logger = logging.getLogger(__name__)
+
+# Load environment variables from the .env file
+load_dotenv()
+
+# Initialize FastAPI router
+router = APIRouter()
+
+# Initialize PIIScanner instance
 pii_scanner = PIIScanner()
+
+# Load structured file formats from environment variables
+STRUCTURED_FILE_FORMATS = os.getenv("STRUCTURED_FILE_FORMATS").split(',')
 
 # Function to get a ClickHouse client
 def get_clickhouse_client():
-    return clickhouse_connect.get_client(
-        host='148.113.6.50',
-        port="8123",
-        username='default',
-        password='',
-        database='default'
-    )
+    return Connection.client 
 
-
-# Main endpoint to process uploaded CSV file and perform NER
+# Main endpoint to process uploaded file and perform NER
 @router.post("/process/{table_id}")
 async def predict_ner(table_id: str, file: UploadFile):
     if not table_id:
         raise HTTPException(status_code=400, detail="Missing required parameter: table_id")
+    
+    # Get the file extension
     file_extension = file.filename.split(".")[-1]
 
-    # Process the CSV file
-    data = await process_file_data(file,file_extension)
+    # Process the file based on its extension
+    data = await process_file_data(file, file_extension)
 
     # Process NER and update results in ClickHouse
     save_result = await process_and_update_ner_results(table_id, data)
@@ -47,14 +49,15 @@ async def predict_ner(table_id: str, file: UploadFile):
     if not save_result:
         raise HTTPException(status_code=500, detail=f"Failed to save or update NER data for table_id: {table_id}")
     
-    return {"message": "Data uploaded and processed successfully", "details": save_result}  
+    return {"message": "Data uploaded and processed successfully", "details": save_result}
 
+# Function to process file data based on its extension
 async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
     """
     Processes a file based on its extension (CSV, Excel, JSON) into a dictionary structure.
     """
     if file_extension.lower() not in STRUCTURED_FILE_FORMATS:
-        logger.error(f"Unsupported file format: {file_extension} for{ file} ")
+        logger.error(f"Unsupported file format: {file_extension} for {file}")
         raise HTTPException(status_code=400, detail="Unsupported file format")
 
     file_content = await file.read()
@@ -63,10 +66,9 @@ async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
             content_str = file_content.decode("utf-8")  # Decode byte content to string
             # Detect the delimiter automatically
             sniffer = csv.Sniffer()
-            delimiter = sniffer.sniff(content_str).delimiter              # Detect delimiter automatically only for testing
+            delimiter = sniffer.sniff(content_str).delimiter  # Detect delimiter automatically
             # Read CSV with detected delimiter
             data = pd.read_csv(StringIO(content_str), sep=delimiter)
-            
         elif file_extension in ['xlsx', 'xls']:
             data = pd.read_excel(file_content)
         elif file_extension == 'json':
@@ -75,22 +77,22 @@ async def process_file_data(file: UploadFile, file_extension: str) -> Dict:
         else:
             raise ValueError("Unsupported file format")
 
-        
         if data.empty:
             raise ValueError(f"No valid data found in {file_extension.upper()} file")
 
         column_data = {col: [str(value) for value in data[col]] for col in data.columns}
-        logger.info(f"Processed {file_extension.upper()} file {file} with columns: {list(data.columns)}")
+        logger.info(f"Processed {file_extension.upper()} file {file.filename} with columns: {list(data.columns)}")
         return column_data
     
     except Exception as e:
-        logger.error(f"Error processing {file_extension.upper()} file '{file}': {str(e)}")
+        logger.error(f"Error processing {file_extension.upper()} file '{file.filename}': {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error processing {file_extension.upper()} file: {str(e)}")
 
 # Function to process NER results and update them in ClickHouse
 async def process_and_update_ner_results(table_id: str, data: dict):
     try:
         for column_name, column_data in data.items():
+            # Perform NER scanning on the column data
             json_result = await pii_scanner.scan(data=column_data, sample_size=5, region=Regions.IN)
             
             entity_counts = defaultdict(int)
@@ -132,9 +134,8 @@ async def process_and_update_ner_results(table_id: str, data: dict):
     except Exception as e:
         logger.error(f"Error processing NER results: {str(e)}")
         return False
-#Adding data elemnt category to the NER results
-#Function to fetch data element category from ClickHouse
 
+# Function to fetch data element category from ClickHouse
 async def fetch_data_element_category(detected_entity):
     try:
         client = get_clickhouse_client()
@@ -158,9 +159,8 @@ async def fetch_data_element_category(detected_entity):
         logger.info(f"Error fetching data element category from ClickHouse: {str(e)}")
         return f"Error: {str(e)}"
 
-
 # Function to update NER results for each column in ClickHouse
-async def update_entity_for_column(table_id, column_name, ner_results, detected_entity,data_element):
+async def update_entity_for_column(table_id, column_name, ner_results, detected_entity, data_element):
     try:
         client = get_clickhouse_client()
         
