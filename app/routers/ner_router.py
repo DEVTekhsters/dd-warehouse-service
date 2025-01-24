@@ -152,8 +152,31 @@ async def fetch_data_element_category(detected_entity):
             logger.info(f"Data element category for {detected_entity}: {category}")
             return category
         else:
-            logger.info(f"No data element category found for {detected_entity}")
-            return "N/A"
+            logger.info(f"No data element category found for {detected_entity}. Adding to 'UNKNOWN' category.")
+            
+            # Check if the 'unknown' category already exists
+            check_unknown_query = f"""SELECT parameter_value FROM data_element WHERE parameter_name = 'UNKNOWN';"""
+            unknown_result = client.query(check_unknown_query)
+            
+            if unknown_result.result_rows:
+                # Update the existing 'unknown' category
+                existing_values = unknown_result.result_rows[0][0]
+                if detected_entity not in existing_values:
+                    updated_values = existing_values + [detected_entity]
+                    update_unknown_query = f"""
+                    ALTER TABLE data_element UPDATE parameter_value = {updated_values} WHERE parameter_name = 'UNKNOWN';
+                    """
+                    client.command(update_unknown_query)
+                    logger.info(f"Updated 'UNKNOWN' category with {detected_entity}.")
+            else:
+                # Insert a new 'unknown' category
+                insert_unknown_query = f"""
+                INSERT INTO data_element (parameter_name, parameter_value) VALUES ('UNKNOWN', ['{detected_entity}'])
+                """
+                client.command(insert_unknown_query)
+                logger.info(f"Added {detected_entity} to 'UNKNOWN' category.")
+            
+            return "UNKNOWN"
         
     except Exception as e:
         logger.info(f"Error fetching data element category from ClickHouse: {str(e)}")
