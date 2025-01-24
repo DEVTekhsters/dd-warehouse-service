@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 from pydantic import BaseModel
+from app.constants.sensitivity_data import SENSITIVITY_MAPPING
 import nltk
 
 nltk.download('punkt')
@@ -193,9 +194,10 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
         
         # Fetch data element category
         data_element = await data_element_category(highest_label)
-        
+        data_sensitivity = await sensitivity_of_deteceted_enetity(highest_label)
+
         # Save results to the database (ClickHouse)
-        save_unstructured_ner_data(ner_results, metadata, data_element, highest_label)
+        save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, highest_label)
 
         return {"message": "File processed successfully", "pii_results": json_result, "metadata": metadata}
 
@@ -248,10 +250,18 @@ async def data_element_category(detected_entity):
         logger.error(f"Error fetching data element category from ClickHouse: {str(e)}")
         return f"Error: {str(e)}"
 
-        
-
+async def sensitivity_of_deteceted_enetity(detected_entity):
+    logger.info(f"Fetching sensitivity for detected entity: {detected_entity}")
+    if detected_entity in SENSITIVITY_MAPPING:
+        sensitivity = SENSITIVITY_MAPPING[detected_entity]
+        logger.info(f"Sensitivity for {detected_entity}: {sensitivity}")
+        return sensitivity
+    else:
+        logger.warning(f"Sensitivity for {detected_entity} not found. Returning 'Unknown'.")
+        return "Unknown"
+          
 # Save NER results to ClickHouse database (example) 
-def save_unstructured_ner_data(ner_results, metadata, data_element, detected_entity):
+def save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, detected_entity):
     """Save the processed NER results into the database (e.g., ClickHouse)."""
     if not ner_results:
         logger.error("No PII data detected in the file.")
@@ -267,6 +277,7 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, detected_ent
         "json": ner_results_json,
         "detected_entity":detected_entity,
         "data_element": data_element,
+        "data_sensitivity":data_sensitivity,
         "file_size": metadata.get("file_size"),
         "file_type": metadata.get("file_type"),
         "source": metadata.get("source"),
@@ -280,8 +291,8 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, detected_ent
 
     try:
         insert_query = """
-        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, file_size, file_type, source, sub_service, region)
-        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s,%(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
+        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, data_sensitivity, file_size, file_type, source, sub_service, region)
+        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s,%(data_element)s, %(data_sensitivity)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
         """
         client.command(insert_query, data_to_insert)
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
