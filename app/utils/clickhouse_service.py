@@ -1,7 +1,9 @@
 from client_connect import Connection
 import pandas as pd
+import datetime
 import logging
 import json
+import re
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +35,7 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         raise ValueError(f"Unknown entity type: {entity_type}")
 
     # Ensure the identifier column exists and is converted to string (in case of float or NaN values)
-    print(data.columns)
+    logger.debug(f"Data columns: {data.columns}")
     if identifier_column not in data.columns:
         logger.error(f"The DataFrame must contain a '{identifier_column}' column for updates.")
         raise ValueError(f"The DataFrame must contain a '{identifier_column}' column for updates.")
@@ -44,7 +46,6 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
 
     # Ensure all identifiers are treated as strings
     data[identifier_column] = data[identifier_column].astype(str)
-    print(data[identifier_column])
     logger.info(f"Converted '{identifier_column}' to string for all rows.")
 
     # Insert the data in batches    
@@ -55,7 +56,9 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
     
     try:
         # Collect all identifiers (either 'id' or 'entityFQNHash') from the incoming data
-        ids = data[identifier_column].tolist()
+        ids = data[identifier_column].tolist()  # Convert to list here, after handling NaNs
+        logger.debug(f"IDs: {ids}, Type: {type(ids)}")
+        
         # Process deletion in batches to avoid exceeding query size limits
         for i in range(0, len(ids), batch_size):
             batch_ids = ids[i:i + batch_size]
@@ -63,17 +66,25 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             delete_query = f"ALTER TABLE {table_name} DELETE WHERE {identifier_column} IN ({id_conditions})"
             logger.debug(f"Executing query: {delete_query}")
             client.command(delete_query)
-            logger.info(f"Deleted batch {i//batch_size + 1} from table '{table_name}'")
+            logger.info(f"Deleted batch {i // batch_size + 1} from table '{table_name}'")
 
+        logger.info("step 1 ---------------------- deleted ")
+        logger.info("*"*20)
+        logger.info(f"Data for '{identifier_column}': {data[identifier_column]}, Type: {type(data[identifier_column])},Type data: {type(data)},  Length: {len(data[identifier_column])}")
 
         # Now iterate over the data in batches
-        for i in range(0, len(data[identifier_column]), batch_size):
-
+        length = len(data[identifier_column])
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        for i in range(0, length, batch_size):
             batch_data = data.iloc[i:i + batch_size]
             rows = batch_data.to_records(index=False).tolist()
             column_names = list(batch_data.columns)
             client.insert(table_name, rows, column_names=column_names)
             logger.info(f"Inserted batch {i // batch_size + 1} into table '{table_name}'")
+        logger.info("*"*20)
+        
+        
+        logger.info("step 2 ----------------------")
 
         # Delete from dbservice_entity_meta_info
         meta_info_table = "dbservice_entity_meta_info"
@@ -86,7 +97,6 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             client.command(delete_meta_query)
             logger.info(f"Deleted batch {i // batch_size + 1} from table '{meta_info_table}'")
 
-
         # Insert data into dbservice_entity_meta_info
         for i in range(0, len(data[identifier_column]), batch_size):
             batch_data = data.iloc[i:i + batch_size]
@@ -94,10 +104,10 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             for index in batch_data.index:
                 row = batch_data.loc[index]
                 row = row.to_dict()
-                logger.info(f"row:{row}")
-                logger.info(f"row_json :{row['json']}")
-                data_host = json.loads(row['json'])  # JSON is also the column name in data
-                # host_port = data_host['connection']['config']['hostPort']
+                logger.debug(f"Row data: {row}")
+                fixed_json = fix_json_format(row['json'])
+                data_host = json.loads(fixed_json)
+
                 host_port = data_host.get('connection', {}).get('config', {}).get('hostPort', '')
                 host_parts = host_port.split(".") if host_port else []
 
@@ -105,28 +115,21 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
                 region = host_parts[2] if len(host_parts) > 2 else "N/A"
                 source = host_parts[4] if len(host_parts) > 4 else "N/A"
 
-                if len(region) < 4:     #REMOVE THIS IN FUTURE only for TESTING CASE
-                    region ="INDIA"
-
                 # Extract other fields directly from the DataFrame
-                # Extract fields based on entity_type
                 if entity_type == "profiler_data_time_series":
-                    dbservice_entity_id = row['entityFQNHash']  # 'entityFQNHash' is the actual column name for profiler_data_time_series
-                    dbservice_entity_name = row['name'] if 'name' in row else "N/A"  # 'name' might not be present in profiler_data_time_series
+                    dbservice_entity_id = row['entityFQNHash']
+                    dbservice_entity_name = row.get('name', "N/A")
                 else:
-                    dbservice_entity_id = row['id']  # 'id' is the actual column name for other tables
-                    dbservice_entity_name = row['name']  # 'name' is the actual column name for other tables
+                    dbservice_entity_id = row['id']
+                    dbservice_entity_name = row['name']
 
-
-                # Log the hostPort and extracted parts
-                logger.info(f"Host port: {host_port}, Region: {region}, Source: {source}")
-
+                logger.debug(f"Host port: {host_port}, Region: {region}, Source: {source}")
 
                 # Append the extracted data as a tuple to the rows list
                 rows.append((dbservice_entity_id, dbservice_entity_name, source, region))
 
             # Prepare column names for the insert statement
-            column_names = ['dbservice_entity_id', 'dbservice_entity_name', 'source', 'region' ]
+            column_names = ['dbservice_entity_id', 'dbservice_entity_name', 'source', 'region']
             
             # Insert the collected rows into the ClickHouse table
             client.insert(meta_info_table, rows, column_names=column_names)
@@ -142,7 +145,35 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
     except Exception as e:
         logger.error(f"Error processing data: {e}")
         return {"error": str(e)}
-import datetime
+
+def fix_json_format(json_string):
+    """
+    Attempts to fix malformed JSON by replacing single quotes with double quotes,
+    ensuring property names are quoted, and handling minor formatting issues.
+    """
+    if not isinstance(json_string, str) or not json_string.strip():
+        return "{}"  # Return an empty JSON object if the input is invalid
+
+    try:
+        # Try parsing first, return if valid
+        json.loads(json_string)
+        return json_string
+    except json.JSONDecodeError:
+        pass
+
+    # Replace single quotes with double quotes (for keys and values)
+    json_string = json_string.replace("'", '"')
+
+    # Ensure property names are quoted (handles missing quotes around keys)
+    json_string = re.sub(r'(\b\w+\b)(\s*:\s*)', r'"\1"\2', json_string)
+
+    try:
+        json.loads(json_string)  # Verify if the fix works
+        return json_string
+    except json.JSONDecodeError as e:
+        print(f"Failed to fix JSON: {json_string}. Error: {e}")
+        return "{}"  # Return empty JSON object if it cannot be fixed
+
 
 def profiler_meta_data(ids, batch_size, identifier_column, data, client):
     table_name = "profiler_metadata"
@@ -201,4 +232,3 @@ def profiler_meta_data(ids, batch_size, identifier_column, data, client):
                 logger.error(f"Error during insert operation: {insert_error}")
         else:
             logger.info(f"No rows with jsonSchema='tableProfile' in batch {i // batch_size + 1}")
-
