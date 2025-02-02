@@ -104,13 +104,22 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
             for index in batch_data.index:
                 row = batch_data.loc[index]
                 row = row.to_dict()
-                logger.debug(f"Row data: {row}")
-                fixed_json = fix_json_format(row['json'])
-                data_host = json.loads(fixed_json)
+                logger.debug(f"Row_json:{row['json']}")
+        
+                json_str = row['json'].replace("'", '"').replace("False", "false").replace("True", "true")
+                json_str = json_str.rstrip(',')  # Remove any trailing commas
+
+                logger.debug(f"Modified JSON string: {json_str}")
+                
+                try:
+                    data_host = json.loads(json_str)  # JSON is also the column name in data
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error decoding JSON: {e}")
+                    continue
 
                 host_port = data_host.get('connection', {}).get('config', {}).get('hostPort', '')
+                # Split the hostPort value
                 host_parts = host_port.split(".") if host_port else []
-
                 # Ensure host_parts has enough elements before accessing indices
                 region = host_parts[2] if len(host_parts) > 2 else "N/A"
                 source = host_parts[4] if len(host_parts) > 4 else "N/A"
@@ -146,35 +155,6 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         logger.error(f"Error processing data: {e}")
         return {"error": str(e)}
 
-def fix_json_format(json_string):
-    """
-    Attempts to fix malformed JSON by replacing single quotes with double quotes,
-    ensuring property names are quoted, and handling minor formatting issues.
-    """
-    if not isinstance(json_string, str) or not json_string.strip():
-        return "{}"  # Return an empty JSON object if the input is invalid
-
-    try:
-        # Try parsing first, return if valid
-        json.loads(json_string)
-        return json_string
-    except json.JSONDecodeError:
-        pass
-
-    # Replace single quotes with double quotes (for keys and values)
-    json_string = json_string.replace("'", '"')
-
-    # Ensure property names are quoted (handles missing quotes around keys)
-    json_string = re.sub(r'(\b\w+\b)(\s*:\s*)', r'"\1"\2', json_string)
-
-    try:
-        json.loads(json_string)  # Verify if the fix works
-        return json_string
-    except json.JSONDecodeError as e:
-        print(f"Failed to fix JSON: {json_string}. Error: {e}")
-        return "{}"  # Return empty JSON object if it cannot be fixed
-
-
 def profiler_meta_data(ids, batch_size, identifier_column, data, client):
     table_name = "profiler_metadata"
     for i in range(0, len(ids), batch_size):
@@ -202,8 +182,15 @@ def profiler_meta_data(ids, batch_size, identifier_column, data, client):
             rows = []
             for _, row in filtered_data.iterrows():
                 try:
-                    json_data = json.loads(row["json"])
-                    
+                
+                    json_str = row['json'].replace("'", '"').replace("False", "false").replace("True", "true")
+                    json_str = json_str.rstrip(',')  # Remove any trailing commas
+                    try:
+                        json_data = json.loads(json_str)  # JSON is also the column name in data
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Error decoding JSON: {e}")
+                        continue
+                
                     # Convert createDateTime to Unix timestamp (seconds since epoch)
                     createDateTime_str = json_data.get("createDateTime")
                     if createDateTime_str:
