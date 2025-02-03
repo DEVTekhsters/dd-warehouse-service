@@ -104,7 +104,7 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
                 # Process the file with NER
                 await process_ner_for_file(temp_file_path, data_received)
                 # If processing is successful, remove the file from MinIO
-                minio_client.remove_object(bucket_name, file_name)
+                # minio_client.remove_object(bucket_name, file_name)
                 logger.info(f"Successfully deleted file: {file_name} from MinIO.")
             except Exception as ner_error:
                 logger.error(f"NER processing failed for file {file_name}: {str(ner_error)}")
@@ -152,12 +152,7 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
     }
 
     try:
-        # Check if the file type is structured or unstructured and process accordingly
-        if file_type.lower() in STRUCTURED_FILE_FORMATS:
-            results = await process_and_update_ner_results_structured(file_name, file_path, file_type, metadata)
-        elif file_type.lower() in UNSTRUCTURED_FILE_FORMATS:
-            results = await process_and_update_ner_results_unstructured(file_path, file_type, file_name, metadata)
-
+        results = await process_and_update_ner_results_unstructured(file_path, file_type, file_name, metadata)
         if not results:
             logger.error("Results are not detected")
 
@@ -168,152 +163,67 @@ async def process_ner_for_file(file_path: Path, data_received: DataReceived):
         logger.error(f"Error processing file {file_name}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
 
-# Function to process NER results and update them in ClickHouse for structured files
-async def process_and_update_ner_results_structured(file_name: str, file_path: Path, file_type: str, metadata: dict):
-    
-    data = process_file_data(file_path, file_type)  # Process the file data based on its type
-    try:
-        for column_name, column_data in data.items():
-            # Perform NER scanning on the column data
-            json_result = await scanner.scan(data=column_data, sample_size=5, region=Regions.IN)
-            entity_counts = defaultdict(int)  # Dictionary to count detected entities
-            total_entities = 0  # Total number of entities detected
-            ner_results = 'NA'  # Initialize NER results
-
-            if json_result:  # Check if there is a valid response from the NER scanner
-                for result in json_result.get("results", []):  # Iterate over each result in the JSON response
-                    # Check if 'entity_detected' exists and is a non-empty list
-                    if result.get("entity_detected") and len(result["entity_detected"]) > 0:
-                        entity_type = result["entity_detected"][0].get("type", "Unknown")  # Extract entity type
-                        entity_counts[entity_type] += 1  # Increment count for detected entity type
-                        total_entities += 1  # Increment total entity count
-
-                # If entities were detected, determine the most frequent entity type and its confidence score
-                if entity_counts:
-                    highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]  
-                    # Compute confidence score (ratio of most frequent entity type occurrences to total entities detected)
-                    confidence_score = round(max(entity_counts.values()) / total_entities, 2)
-                    ner_results = {
-                        'highest_label': highest_label,  # Most frequently detected entity type
-                        'confidence_score': confidence_score,  # Confidence score of the detected entity
-                        'detected_entities': {k: v for k, v in entity_counts.items()}  # Dictionary of all detected entity counts
-                    }
-                else:
-                    # No entities were detected, return default values
-                    ner_results = {'highest_label': 'NA', 'confidence_score': 0, 'detected_entities': {}}
-
-                # Log the NER results for the specific column
-                logger.info(f"NER results for column {column_name}: {ner_results}")
-
-                # Extract the highest detected entity type, defaulting to 'NA' if none found
-                if isinstance(ner_results, dict) and 'highest_label' in ner_results:
-                    detected_entity = ner_results['highest_label']
-                else:
-                    detected_entity = 'NA'
-
-                # **Fetch data element category and sensitivity**
-                # These functions are used to classify the detected entity type and assign sensitivity levels.
-                # - `data_element_category(detected_entity)`: Maps the detected entity to a predefined category (e.g., Name, Address, Email, etc.).
-                # - `sensitivity_of_detected_entity(detected_entity)`: Assigns a sensitivity score (e.g., High, Medium, Low) based on the type of entity detected.
-
-                data_element = await data_element_category(detected_entity)  # Retrieve the category of the detected entity
-                data_sensitivity = await sensitivity_of_deteceted_enetity(detected_entity)  # Determine the sensitivity level of the detected entity
-
-                # Uncomment the following lines to save the NER results to the database
-                update_result = save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, detected_entity, column_name)
-                if not update_result:
-                    logger.error(f"Failed to save NER results for file_name: {file_name}, column: {column_name}")
-                    return False
-
-        return True  # Return success if processing is complete
-    except Exception as e:
-        logger.error(f"Error processing file {file_name} {file_type}: {str(e)}")
-        return False  # Return failure if an error occurs
-
-# Function to process file data based on its extension
-def process_file_data(file_path: Path, file_type: str) -> Dict:
-    file_type = file_type.lower()  # Normalize the file type to lowercase
-    try:
-        # Read CSV files
-        if file_type == 'csv':
-            with open(file_path, "r", encoding="utf-8") as f:
-                content_str = f.read()
-                sniffer = csv.Sniffer()
-                delimiter = sniffer.sniff(content_str).delimiter  # Automatically detect the delimiter
-            
-            data = pd.read_csv(file_path, sep=delimiter)  # Read the CSV file with the detected delimiter
-
-        # Read Excel files
-        elif file_type in ['xlsx', 'xls']:
-            data = pd.read_excel(file_path)
-
-        # Read JSON files
-        elif file_type == 'json':
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = pd.read_json(f)
-
-        else:
-            raise ValueError("Unsupported file format")  # Raise an error for unsupported formats
-
-        if data.empty:
-            raise ValueError(f"No valid data found in {file_type.upper()} file")  # Check for empty data
-
-        # Convert DataFrame columns to a dictionary of lists
-        column_data = {col: [str(value) for value in data[col]] for col in data.columns}
-        logger.info(f"Processed {file_type.upper()} file {file_path} with columns: {list(data.columns)}")
-        return column_data  # Return the processed data
-
-    except Exception as e:
-        logger.error(f"Error processing {file_type.upper()} file '{file_path}': {str(e)}")
-        raise ValueError(f"Error processing {file_type.upper()} file: {str(e)}")  # Raise an error if processing fails
-
 # Function to process NER results and update them in ClickHouse for unstructured files
 async def process_and_update_ner_results_unstructured(file_path: Path, file_type: str, file_name: str, metadata: dict):
-    
     entity_counts = defaultdict(int)  # Dictionary to count detected entities
     total_entities = 0  # Total number of entities detected
     ner_results = 'NA'  # Initialize NER results
+
     try:
         # Perform NER scanning on the file
         json_result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
-
         if not json_result:
             logger.error(f"No PII detected in the file {file_name} {file_type}. Skipping further processing.")
             raise ValueError("No PII data detected in the file.")
-        
-        if json_result:
+
+        # Processing for initial format (list of results)
+        if isinstance(json_result, list):
             for result in json_result:
                 if isinstance(result, dict) and "entity_detected" in result:
                     detected_entities = result["entity_detected"]
                     if isinstance(detected_entities, list):
                         for entity in detected_entities:
                             if isinstance(entity, dict):
-                                entity_type = entity.get("type")  # Get the entity type
+                                entity_type = entity.get("type")
                                 if entity_type:
-                                    entity_counts[entity_type] += 1  # Increment the count for the detected entity type
-                                    total_entities += 1  # Increment the total entity count
+                                    entity_counts[entity_type] += 1
+                                    total_entities += 1
 
-            if entity_counts:
-                # Determine the highest label and confidence score
-                highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
-                confidence_score = round(max(entity_counts.values()) / total_entities, 2)
-                ner_results = {
-                    'highest_label': highest_label,
-                    'confidence_score': confidence_score,
-                    'detected_entities': {k: v for k, v in entity_counts.items()}
-                }
-                
-                # Fetch data element category and sensitivity
-                data_element = await data_element_category(highest_label)
-                data_sensitivity = await sensitivity_of_deteceted_enetity(highest_label)
-                column_name = "N/A"  # Placeholder for column name
-                save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, highest_label, column_name)  # Save results
+        # Processing for new format (grouped by field names)
+        elif isinstance(json_result, dict):  # Case 2: Grouped by field names
+            for category, data in json_result.items():
+                if isinstance(data, dict) and isinstance(data.get("results"), list):
+                    for result in data["results"]:
+                        detected_entities = result.get("entity_detected", [])
+                        if isinstance(detected_entities, list):
+                            for entity in detected_entities:
+                                entity_type = entity.get("type")
+                                if entity_type:
+                                    entity_counts[entity_type] += 1
+                                    total_entities += 1 
 
-            return True  # Return success if processing is complete
+        if entity_counts:
+            # Determine the highest label and confidence score
+            highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
+            confidence_score = round(max(entity_counts.values()) / total_entities, 2)
+            ner_results = {
+                'highest_label': highest_label,
+                'confidence_score': confidence_score,
+                'detected_entities': dict(entity_counts)
+            }
+
+            # Fetch data element category and sensitivity
+            data_element = await data_element_category(highest_label)
+            data_sensitivity = await sensitivity_of_deteceted_enetity(highest_label)
+            logger.info(f" total detected entities are:{ner_results}")
+
+            save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, highest_label)
+
+        return True  # Return success if processing is complete
 
     except Exception as e:
         logger.error(f"Error processing file {file_name} {file_type}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")  # Raise an error if processing fails
+        raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
 
 # Function to fetch data element category from ClickHouse
 async def data_element_category(detected_entity):
@@ -366,7 +276,7 @@ async def sensitivity_of_deteceted_enetity(detected_entity):
         return "Unknown"  # Return 'Unknown' if sensitivity not found
 
 # Save NER results to ClickHouse database
-def save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, detected_entity, column_name):
+def save_unstructured_ner_data(ner_results, metadata, data_element, data_sensitivity, detected_entity):
     if not ner_results:
         logger.error("No PII data detected in the file.")
         raise ValueError("No PII data detected")  # Raise an error if no PII data is detected
@@ -377,7 +287,6 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, data_sensiti
     data_to_insert = {
         "source_bucket": metadata.get("source_bucket"),
         "file_name": metadata.get("file_name"),
-        "column_name": column_name,
         "json": ner_results_json,
         "detected_entity": detected_entity,
         "data_element": data_element,
@@ -395,8 +304,8 @@ def save_unstructured_ner_data(ner_results, metadata, data_element, data_sensiti
     try:
         # Insert data into the ner_unstructured_data table
         insert_query = """
-        INSERT INTO ner_unstructured_data (source_bucket, file_name, column_name, json, detected_entity, data_element, data_sensitivity, file_size, file_type, source, sub_service, region)
-        VALUES (%(source_bucket)s, %(file_name)s, %(column_name)s, %(json)s, %(detected_entity)s, %(data_element)s, %(data_sensitivity)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
+        INSERT INTO ner_unstructured_data (source_bucket, file_name, json, detected_entity, data_element, data_sensitivity, file_size, file_type, source, sub_service, region)
+        VALUES (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s, %(data_element)s, %(data_sensitivity)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
         """
         client.command(insert_query, data_to_insert)  # Execute the insert command
         logger.info("Successfully inserted data into the ner_unstructured_data table.")
