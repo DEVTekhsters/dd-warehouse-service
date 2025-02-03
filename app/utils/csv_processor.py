@@ -11,8 +11,5 @@ def process_csv(file: UploadFile, sep: str = ";") -> pd.DataFrame:
 
     df = pd.read_csv(file.file, sep=sep,index_col=False)
     print(df)
-
-    # Convert the 'timestamp' column to a readable date-time format
-    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
     
     return df
