@@ -104,7 +104,7 @@ async def process_files_from_minio(bucket_name: str, folder_name: str, data_rece
                 # Process the file with NER
                 await process_ner_for_file(temp_file_path, data_received)
                 # If processing is successful, remove the file from MinIO
-                # minio_client.remove_object(bucket_name, file_name)
+                minio_client.remove_object(bucket_name, file_name)
                 logger.info(f"Successfully deleted file: {file_name} from MinIO.")
             except Exception as ner_error:
                 logger.error(f"NER processing failed for file {file_name}: {str(ner_error)}")
