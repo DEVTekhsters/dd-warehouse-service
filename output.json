@@ -60,5 +60,371 @@
         "addresses": [
             "INDIA"
         ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/sample.jpg",
+        "pii_class": null,
+        "score": 0,
+        "country_of_origin": null,
+        "faces": 0,
+        "identifiers": [],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": []
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "XXXXXXXXX",
+            "Authority",
+            "identific",
+            "XXXKKAAAA",
+            "Identific",
+            "XXXXXXXAK",
+            "KAXXKXKXK",
+            "KAAKKKKKK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAAKKKKKK",
+            "KAXXKXKXK",
+            "XXXXXXXXX",
+            "Identific",
+            "identific",
+            "Authority",
+            "XXXKKAAAA",
+            "XXXXXXXAK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAXXKXKXK",
+            "XXXXXXXAK",
+            "KAAKKKKKK",
+            "XXXXXXXXX",
+            "Authority",
+            "XXXKKAAAA",
+            "identific",
+            "Identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "identific",
+            "XXXXXXXXX",
+            "Identific",
+            "Authority",
+            "XXXXXXXAK",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "KAXXKXKXK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "XXXXXXXAK",
+            "Authority",
+            "KAAKKKKKK",
+            "XXXKKAAAA",
+            "XXXXXXXXX",
+            "Identific",
+            "KAXXKXKXK",
+            "identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "XXXKKAAAA",
+            "XXXXXXXXX",
+            "Authority",
+            "KAXXKXKXK",
+            "identific",
+            "KAAKKKKKK",
+            "Identific",
+            "XXXXXXXAK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAXXKXKXK",
+            "Authority",
+            "Identific",
+            "XXXXXXXAK",
+            "XXXXXXXXX",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "XXXXXXXXX",
+            "KAXXKXKXK",
+            "Authority",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "XXXXXXXAK",
+            "Identific",
+            "identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAAKKKKKK",
+            "XXXXXXXXX",
+            "XXXKKAAAA",
+            "identific",
+            "KAXXKXKXK",
+            "XXXXXXXAK",
+            "Identific",
+            "Authority"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "Authority",
+            "XXXXXXXXX",
+            "identific",
+            "XXXXXXXAK",
+            "KAAKKKKKK",
+            "XXXKKAAAA",
+            "Identific",
+            "KAXXKXKXK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAAKKKKKK",
+            "Authority",
+            "XXXKKAAAA",
+            "XXXXXXXXX",
+            "XXXXXXXAK",
+            "Identific",
+            "KAXXKXKXK",
+            "identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "XXXXXXXXX",
+            "Identific",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "Authority",
+            "KAXXKXKXK",
+            "identific",
+            "XXXXXXXAK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "Identific",
+            "KAXXKXKXK",
+            "XXXXXXXAK",
+            "identific",
+            "Authority",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "XXXXXXXXX"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/images.jpeg",
+        "pii_class": "Permanent Account Number",
+        "score": 8,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "FNVPMSEHT",
+            "Paveaeses",
+            "Seipreyan"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA",
+            "Past"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/images.jpeg",
+        "pii_class": "Permanent Account Number",
+        "score": 8,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "FNVPMSEHT",
+            "Paveaeses",
+            "Seipreyan"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA",
+            "Past"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/sample.jpg",
+        "pii_class": null,
+        "score": 0,
+        "country_of_origin": null,
+        "faces": 0,
+        "identifiers": [],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": []
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "Identific",
+            "KAAKKKKKK",
+            "XXXXXXXXX",
+            "XXXXXXXAK",
+            "KAXXKXKXK",
+            "identific",
+            "Authority",
+            "XXXKKAAAA"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
     }
 ]

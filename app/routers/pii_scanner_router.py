@@ -103,7 +103,7 @@ async def process_file(file_path: str, file_extension: str) -> Dict:
         data = process_file_data(file_path, file_extension)
         return await process_and_update_ner_results(data)
     
-    elif file_extension in ['pdf', 'txt', 'doc', 'docx']:
+    elif file_extension in ['pdf', 'txt', 'doc', 'docx','jpg','jpeg','png']:
         return await process_unstructured_file(file_path)
     
     return {"error": "Unsupported file format."}
@@ -111,7 +111,7 @@ async def process_file(file_path: str, file_extension: str) -> Dict:
 
 async def process_unstructured_file(file_path: str) -> Dict:
     """
-    Scans unstructured files (e.g., PDF, TXT, DOCX) for PII data.
+    Scans unstructured files (e.g., PDF, TXT, DOCX , JPEG , JPG , PNG) for PII data.
     """
     try:
         logger.info(f"Starting scan for unstructured file: {file_path}")
@@ -123,20 +123,32 @@ async def process_unstructured_file(file_path: str) -> Dict:
         # Initiating the scan
         logger.info("Calling PII scanner with provided file.")
         result = await pii_scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
-        
+
         # Logging the raw result from the scanner
         logger.debug(f"Raw scan result: {result}")
         
-        if result:
-            # Extracting and logging detected entity types
-            entity_types = list({
-                entity['type']
-                for item in result
-                if "entity_detected" in item
-                for entity in item['entity_detected']
+        # if result:
+        #     # Extracting and logging detected entity types
+        #     entity_types = list({
+        #         entity['type']
+        #         for item in result
+        #         if "entity_detected" in item
+        #         for entity in item['entity_detected']
+        #     })
+        processed_results = []
+        for item in result:
+            processed_results.append({
+                "entity_class": item.get("pii_class"),
+                "score": item.get("score"),
+                "country_of_origin": item.get("country_of_origin"),
+                "faces": item.get("faces"),
+                "identifiers": item.get("identifiers", []),
+                "emails": item.get("emails", []),
+                "phone_numbers": item.get("phone_numbers", []),
+                "addresses": item.get("addresses", [])
             })
-            logger.info(f"Entities detected in unstructured file: {entity_types}")
-            return {"entity_types": entity_types}
+            logger.info(f"Entities detected in unstructured file: {processed_results}")
+            return processed_results
         
         # Logging if no entities are detected
         logger.warning("No entities detected in the unstructured file.")
@@ -167,7 +179,7 @@ async def process_multiple_files(
     """
     Processes multiple uploaded files using the PII scanner.
     """
-    allowed_extensions = {'csv', 'xlsx', 'xls', 'json', 'txt', 'pdf',"docx","doc"}
+    allowed_extensions = {'csv', 'xlsx', 'xls', 'json', 'txt', 'pdf',"docx","doc","jpg","jpeg","png"}
     
     # Validate file extensions
     if not files:
