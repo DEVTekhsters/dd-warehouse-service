@@ -1,4 +1,16 @@
-__pycache__/
-.env
-/.newvenv/
+# Ignore compiled Python files
 *.pyc
+*.pyo
+__pycache__/
+
+# Ignore virtual environments
+env/
+.venv/
+newvenv/
+myenv/
+venv/
+
+# Ignore environment files
+.env
+req.txt
+.history/
