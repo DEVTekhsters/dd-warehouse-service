@@ -4,7 +4,7 @@
 
 This repository contains a **Named Entity Recognition (NER) pipeline** leveraging **NLTK (Natural Language Toolkit)** resources for advanced text processing.
 
-## Features
+## Feature
 
 - **Webhook Integration**: Triggered by incoming metadata for unstructured data.
 - **File Retrieval**: Supports various file formats:
