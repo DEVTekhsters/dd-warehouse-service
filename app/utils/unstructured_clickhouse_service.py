@@ -132,6 +132,7 @@ class UnstructuredFileProcessor:
             logger.error(f"Error processing file {file_name}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
 
+
     async def process_and_update_ner_results_unstructured(self, file_path: Path, file_type: str, file_name: str, metadata: dict):
         """
         Applies the NER scanner on the file and updates the results in ClickHouse.
@@ -142,11 +143,14 @@ class UnstructuredFileProcessor:
 
         try:
             json_result = await self.scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
+         
             if not json_result:
                 logger.error(f"No PII detected in the file {file_name} ({file_type}).")
                 raise ValueError("No PII data detected in the file.")
 
+            # Check if json_result is a list
             if isinstance(json_result, list):
+                # Process document file results
                 for result in json_result:
                     if isinstance(result, dict) and "entity_detected" in result:
                         detected_entities = result["entity_detected"]
@@ -157,8 +161,19 @@ class UnstructuredFileProcessor:
                                     if entity_type:
                                         entity_counts[entity_type] += 1
                                         total_entities += 1
+                                        
+                    # Process image file results
+                    elif isinstance(result, dict) and "file_path" in result:
+                        pii_class = result.get("pii_class")
+                        if pii_class:
+                            entity_counts[pii_class] += 1
+                            total_entities += 1
+                            # Log additional information if needed
+                            logger.info(f"Detected PII: {pii_class}, Score: {result.get('score')}, Country: {result.get('country_of_origin')}")
+
+            # Check if json_result stuctured is a dictionary
             elif isinstance(json_result, dict):
-                for category, data in json_result.items():
+                for _, data in json_result.items():
                     if isinstance(data, dict) and isinstance(data.get("results"), list):
                         for result in data["results"]:
                             detected_entities = result.get("entity_detected", [])
@@ -169,6 +184,7 @@ class UnstructuredFileProcessor:
                                         entity_counts[entity_type] += 1
                                         total_entities += 1
 
+            # Prepare NER results
             if entity_counts:
                 highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
                 confidence_score = round(max(entity_counts.values()) / total_entities, 2)
@@ -184,10 +200,12 @@ class UnstructuredFileProcessor:
                     'detected_entities': {"NA"}
                 }
 
-            data_element = await self.fetch_data_element_category(highest_label)
-
             logger.info(f"NER results: {ner_results}")
 
+            # Assuming you have a function to fetch data element category
+            data_element = await self.fetch_data_element_category(highest_label)
+
+            # Save the results (assuming you have a method for this)
             self.save_unstructured_ner_data(ner_results, metadata, data_element, highest_label)
 
             return True
@@ -195,7 +213,7 @@ class UnstructuredFileProcessor:
         except Exception as e:
             logger.error(f"Error processing file {file_name}--{file_type}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-
+    
     async def fetch_data_element_category(self, detected_entity: str):
         """
         Fetches the data element category from ClickHouse for a given detected entity.
