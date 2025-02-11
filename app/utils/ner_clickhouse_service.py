@@ -11,6 +11,7 @@ from io import StringIO
 from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
+from app.utils.common_utils import BaseFileProcessor
 
 # Load environment variables
 load_dotenv()
@@ -21,13 +22,9 @@ logger = logging.getLogger(__name__)
 # Load structured file formats from environment variables
 STRUCTURED_FILE_FORMATS = os.getenv("STRUCTURED_FILE_FORMATS", "").split(',')
 
-class OmdFileProcesser:
+class OmdFileProcesser(BaseFileProcessor):
     def __init__(self):
         self.pii_scanner = PIIScanner()
-
-    def get_clickhouse_client(self):
-        """Returns a ClickHouse client instance."""
-        return Connection.client
 
     async def process_file_data(self, file: UploadFile, file_extension: str) -> Dict:
         """
@@ -125,44 +122,6 @@ class OmdFileProcesser:
         except Exception as e:
             logger.error(f"Error processing NER results: {str(e)}")
             return False
-
-    async def fetch_data_element_category(self, detected_entity: str):
-        """
-        Fetches the data element category from ClickHouse for a given detected entity.
-        If the category does not exist, it adds 'UNKNOWN' as the parameter name
-        and the detected entity as the parameter value, ensuring no duplicates.
-        """
-        try:
-            client = self.get_clickhouse_client()
-            
-            # Query to fetch the category based on the detected entity
-            data_element_query = f"""SELECT parameter_name FROM data_element WHERE parameter_value = '{detected_entity}';"""
-            result = client.query(data_element_query)
-            
-            if result.result_rows:
-                category = result.result_rows[0][0]
-                logger.info(f"Data element category for '{detected_entity}': {category}")
-                return category
-            else:
-                logger.info(f"No data element category found for '{detected_entity}'. Checking 'UNKNOWN' category.")
-                
-                # Check for existing 'UNKNOWN' category
-                check_unknown_query = f"SELECT parameter_value FROM data_element WHERE parameter_name = 'UNKNOWN' AND parameter_value = '{detected_entity}';"
-                unknown_result = client.query(check_unknown_query)
-                
-                if unknown_result.result_rows:
-                    logger.info(f"'{detected_entity}' already exists in 'UNKNOWN' category. No action needed.")
-                else:
-                    # Insert into 'UNKNOWN' category without specifying the id
-                    insert_unknown_query = f"""INSERT INTO data_element (parameter_name, parameter_value, parameter_sensitivity) 
-                                                VALUES ('UNKNOWN', '{detected_entity}','UNKNOWN');"""
-                    client.command(insert_unknown_query)
-                    logger.info(f"Added '{detected_entity}' to 'UNKNOWN' category.")
-                return "UNKNOWN"
-        except Exception as e:
-            logger.error(f"Error fetching data element category from ClickHouse: {str(e)}")
-            return f"Error: {str(e)}"
-
 
     async def update_entity_for_column(
         self,

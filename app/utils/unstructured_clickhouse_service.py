@@ -12,6 +12,7 @@ import nltk
 from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
+from app.utils.common_utils import BaseFileProcessor
 
 
 # Download necessary NLTK resources for natural language processing
@@ -30,7 +31,7 @@ TEMP_FOLDER = Path(__file__).resolve().parent.parent / 'utils/pii_scan/temp_file
 if not TEMP_FOLDER.exists():
     TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
 
-class UnstructuredFileProcessor:
+class UnstructuredFileProcessor(BaseFileProcessor):
     """
     A class to encapsulate processing of unstructured files, applying NER and updating results in ClickHouse.
     """
@@ -55,11 +56,6 @@ class UnstructuredFileProcessor:
 
         # Initialize the PII scanner
         self.scanner = PIIScanner()
-
-    @staticmethod
-    def get_clickhouse_client():
-        """Returns the ClickHouse client for database operations."""
-        return Connection.client
 
     async def process_files_from_minio(self, bucket_name: str, folder_name: str, data_received):
         """
@@ -214,43 +210,6 @@ class UnstructuredFileProcessor:
             logger.error(f"Error processing file {file_name}--{file_type}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
     
-    async def fetch_data_element_category(self, detected_entity: str):
-        """
-        Fetches the data element category from ClickHouse for a given detected entity.
-        If the category does not exist, it adds 'UNKNOWN' as the parameter name
-        and the detected entity as the parameter value, ensuring no duplicates.
-        """
-        try:
-            client = self.get_clickhouse_client()
-            
-            # Query to fetch the category based on the detected entity
-            data_element_query = f"""SELECT parameter_name FROM data_element WHERE parameter_value = '{detected_entity}';"""
-            result = client.query(data_element_query)
-            
-            if result.result_rows:
-                category = result.result_rows[0][0]
-                logger.info(f"Data element category for '{detected_entity}': {category}")
-                return category
-            else:
-                logger.info(f"No data element category found for '{detected_entity}'. Checking 'UNKNOWN' category.")
-                
-                # Check for existing 'UNKNOWN' category
-                check_unknown_query = f"SELECT parameter_value FROM data_element WHERE parameter_name = 'UNKNOWN' AND parameter_value = '{detected_entity}';"
-                unknown_result = client.query(check_unknown_query)
-                
-                if unknown_result.result_rows:
-                    logger.info(f"'{detected_entity}' already exists in 'UNKNOWN' category. No action needed.")
-                else:
-                    # Insert into 'UNKNOWN' category without specifying the id
-                    insert_unknown_query = f"""INSERT INTO data_element (parameter_name, parameter_value, parameter_sensitivity) 
-                                                VALUES ('UNKNOWN', '{detected_entity}','UNKNOWN');"""
-                    client.command(insert_unknown_query)
-                    logger.info(f"Added '{detected_entity}' to 'UNKNOWN' category.")
-                return "UNKNOWN"
-        except Exception as e:
-            logger.error(f"Error fetching data element category from ClickHouse: {str(e)}")
-            return f"Error: {str(e)}"
-
     def save_unstructured_ner_data(self, ner_results, metadata, data_element, detected_entity):
         """
         Saves the NER results and associated metadata into the ClickHouse database.
