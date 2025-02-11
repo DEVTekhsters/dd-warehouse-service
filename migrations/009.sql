@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS data_element
-(
-    id Int32,
+(   id UUID DEFAULT generateUUIDv4(),
     parameter_name String,
-    parameter_value Array(String)
+    parameter_value String,
+    parameter_sensitivity String
 )
 ENGINE = MergeTree()
 ORDER BY id;
