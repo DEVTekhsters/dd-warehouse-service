@@ -1,8 +1,10 @@
 CREATE VIEW IF NOT EXISTS unstructured_view_data_sensitivity AS 
 SELECT 
-    data_sensitivity as sensitivity,
-    COUNT(data_sensitivity) sensitivity_count
+    de.parameter_sensitivity AS sensitivity,
+    COUNT(n.detected_entity) AS sensitivity_count
 FROM 
-    ner_unstructured_data
+    ner_unstructured_data n
+JOIN 
+    data_element de ON n.detected_entity = de.parameter_value
 GROUP BY 
-    data_sensitivity;
+    de.parameter_sensitivity;

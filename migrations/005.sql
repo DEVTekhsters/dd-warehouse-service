@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS column_ner_results (
     json String,
     detected_entity String,
     data_element String,
-    data_sensitivity String,
     created_at DateTime DEFAULT now(),
     updated_at DateTime DEFAULT now()
 ) ENGINE = MergeTree()
