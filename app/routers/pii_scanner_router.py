@@ -118,12 +118,13 @@ async def process_unstructured_file(file_path: str) -> Dict:
         
         # Logging the size of the file for tracking
         file_size = os.path.getsize(file_path)
+        file_extension = os.path.splitext(file_path)[1].lower().replace('.', '')
         logger.info(f"File size: {file_size} bytes")
         
         # Initiating the scan
         logger.info("Calling PII scanner with provided file.")
         result = await pii_scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
-
+        print("RESULT!!!!!!!",result)
         # Logging the raw result from the scanner
         logger.debug(f"Raw scan result: {result}")
         
@@ -135,21 +136,62 @@ async def process_unstructured_file(file_path: str) -> Dict:
         #         if "entity_detected" in item
         #         for entity in item['entity_detected']
         #     })
-        processed_results = []
-        for item in result:
-            processed_results.append({
-                "entity_class": item.get("pii_class"),
-                "score": item.get("score"),
-                "country_of_origin": item.get("country_of_origin"),
-                "faces": item.get("faces"),
-                "identifiers": item.get("identifiers", []),
-                "emails": item.get("emails", []),
-                "phone_numbers": item.get("phone_numbers", []),
-                "addresses": item.get("addresses", [])
-            })
-            logger.info(f"Entities detected in unstructured file: {processed_results}")
-            return processed_results
+        #     logger.info(f"Entities detected in unstructured file: {entity_types}")
+        #     return {"entity_types": entity_types}
         
+        # processed_results = []
+        # for item in result:
+        #     processed_results.append({
+        #         "entity_class": item.get("pii_class"),
+        #         "score": item.get("score"),
+        #         "country_of_origin": item.get("country_of_origin"),
+        #         "faces": item.get("faces"),
+        #         "identifiers": item.get("identifiers", []),
+        #         "emails": item.get("emails", []),
+        #         "phone_numbers": item.get("phone_numbers", []),
+        #         "addresses": item.get("addresses", [])
+        #     })
+        #     logger.info(f"Entities detected in unstructured file: {processed_results}")
+        #     return processed_results
+        if result:
+            if file_extension in {"jpg", "jpeg", "png"}:
+        # Extracting and processing detected entities for image files
+                processed_data = []
+                for item in result:
+                    entity_types = item.get("pii_class")
+                    score = item.get("score")
+                    country_of_origin = item.get("country_of_origin")
+                    faces = item.get("faces")
+                    identifiers = item.get("identifiers", [])
+                    emails = item.get("emails", [])
+                    phone_numbers = item.get("phone_numbers", [])
+                    addresses = item.get("addresses", [])
+
+                    processed_data.append({
+                    "entity_types": entity_types,
+                    "score": score,
+                    "country_of_origin": country_of_origin,
+                    "faces": faces,
+                    "identifiers": identifiers,
+                    "emails": emails,
+                    "phone_numbers": phone_numbers,
+                    "addresses": addresses,
+                    })
+
+                    logger.info(f"Entities detected in image file: {processed_data}")
+                    return processed_data
+
+            else:
+            # Extracting and logging detected entity types for other document files
+                entity_types = list({
+                entity['type']
+                for item in result
+                if "entity_detected" in item
+                for entity in item['entity_detected']
+                })
+                logger.info(f"Entities detected in unstructured file: {entity_types}")
+                return {"entity_types": entity_types}
+
         # Logging if no entities are detected
         logger.warning("No entities detected in the unstructured file.")
         return {"entity_types": []}
@@ -258,6 +300,7 @@ async def save_instant_data(customer_id: int, file_names: List[str], all_final_r
         )
     try:
         json_output = json.dumps(all_final_results)
+        print("JSON OUTPUT!!!!",json_output)
         current_time = datetime.now()
         await asyncio.to_thread(client.insert, 
             'instant_classifier',
