@@ -12,7 +12,8 @@ import nltk
 from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
-from app.constants.sensitivity_data import SENSITIVITY_MAPPING
+from app.utils.common_utils import BaseFileProcessor
+
 
 # Download necessary NLTK resources for natural language processing
 nltk.download('punkt')
@@ -30,7 +31,7 @@ TEMP_FOLDER = Path(__file__).resolve().parent.parent / 'utils/pii_scan/temp_file
 if not TEMP_FOLDER.exists():
     TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
 
-class UnstructuredFileProcessor:
+class UnstructuredFileProcessor(BaseFileProcessor):
     """
     A class to encapsulate processing of unstructured files, applying NER and updating results in ClickHouse.
     """
@@ -55,11 +56,6 @@ class UnstructuredFileProcessor:
 
         # Initialize the PII scanner
         self.scanner = PIIScanner()
-
-    @staticmethod
-    def get_clickhouse_client():
-        """Returns the ClickHouse client for database operations."""
-        return Connection.client
 
     async def process_files_from_minio(self, bucket_name: str, folder_name: str, data_received):
         """
@@ -132,6 +128,7 @@ class UnstructuredFileProcessor:
             logger.error(f"Error processing file {file_name}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
 
+
     async def process_and_update_ner_results_unstructured(self, file_path: Path, file_type: str, file_name: str, metadata: dict):
         """
         Applies the NER scanner on the file and updates the results in ClickHouse.
@@ -142,11 +139,14 @@ class UnstructuredFileProcessor:
 
         try:
             json_result = await self.scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
+         
             if not json_result:
                 logger.error(f"No PII detected in the file {file_name} ({file_type}).")
                 raise ValueError("No PII data detected in the file.")
 
+            # Check if json_result is a list
             if isinstance(json_result, list):
+                # Process document file results
                 for result in json_result:
                     if isinstance(result, dict) and "entity_detected" in result:
                         detected_entities = result["entity_detected"]
@@ -157,8 +157,19 @@ class UnstructuredFileProcessor:
                                     if entity_type:
                                         entity_counts[entity_type] += 1
                                         total_entities += 1
+                                        
+                    # Process image file results
+                    elif isinstance(result, dict) and "file_path" in result:
+                        pii_class = result.get("pii_class")
+                        if pii_class:
+                            entity_counts[pii_class] += 1
+                            total_entities += 1
+                            # Log additional information if needed
+                            logger.info(f"Detected PII: {pii_class}, Score: {result.get('score')}, Country: {result.get('country_of_origin')}")
+
+            # Check if json_result stuctured is a dictionary
             elif isinstance(json_result, dict):
-                for category, data in json_result.items():
+                for _, data in json_result.items():
                     if isinstance(data, dict) and isinstance(data.get("results"), list):
                         for result in data["results"]:
                             detected_entities = result.get("entity_detected", [])
@@ -169,6 +180,7 @@ class UnstructuredFileProcessor:
                                         entity_counts[entity_type] += 1
                                         total_entities += 1
 
+            # Prepare NER results
             if entity_counts:
                 highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
                 confidence_score = round(max(entity_counts.values()) / total_entities, 2)
@@ -184,10 +196,12 @@ class UnstructuredFileProcessor:
                     'detected_entities': {"NA"}
                 }
 
-            data_element = await self.fetch_data_element_category(highest_label)
-
             logger.info(f"NER results: {ner_results}")
 
+            # Assuming you have a function to fetch data element category
+            data_element = await self.fetch_data_element_category(highest_label)
+
+            # Save the results (assuming you have a method for this)
             self.save_unstructured_ner_data(ner_results, metadata, data_element, highest_label)
 
             return True
@@ -195,44 +209,7 @@ class UnstructuredFileProcessor:
         except Exception as e:
             logger.error(f"Error processing file {file_name}--{file_type}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-
-    async def fetch_data_element_category(self, detected_entity: str):
-        """
-        Fetches the data element category from ClickHouse for a given detected entity.
-        If the category does not exist, it adds 'UNKNOWN' as the parameter name
-        and the detected entity as the parameter value, ensuring no duplicates.
-        """
-        try:
-            client = self.get_clickhouse_client()
-            
-            # Query to fetch the category based on the detected entity
-            data_element_query = f"""SELECT parameter_name FROM data_element WHERE parameter_value = '{detected_entity}';"""
-            result = client.query(data_element_query)
-            
-            if result.result_rows:
-                category = result.result_rows[0][0]
-                logger.info(f"Data element category for '{detected_entity}': {category}")
-                return category
-            else:
-                logger.info(f"No data element category found for '{detected_entity}'. Checking 'UNKNOWN' category.")
-                
-                # Check for existing 'UNKNOWN' category
-                check_unknown_query = f"SELECT parameter_value FROM data_element WHERE parameter_name = 'UNKNOWN' AND parameter_value = '{detected_entity}';"
-                unknown_result = client.query(check_unknown_query)
-                
-                if unknown_result.result_rows:
-                    logger.info(f"'{detected_entity}' already exists in 'UNKNOWN' category. No action needed.")
-                else:
-                    # Insert into 'UNKNOWN' category without specifying the id
-                    insert_unknown_query = f"""INSERT INTO data_element (parameter_name, parameter_value, parameter_sensitivity) 
-                                                VALUES ('UNKNOWN', '{detected_entity}','UNKNOWN');"""
-                    client.command(insert_unknown_query)
-                    logger.info(f"Added '{detected_entity}' to 'UNKNOWN' category.")
-                return "UNKNOWN"
-        except Exception as e:
-            logger.error(f"Error fetching data element category from ClickHouse: {str(e)}")
-            return f"Error: {str(e)}"
-
+    
     def save_unstructured_ner_data(self, ner_results, metadata, data_element, detected_entity):
         """
         Saves the NER results and associated metadata into the ClickHouse database.

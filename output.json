@@ -60,5 +60,90 @@
         "addresses": [
             "INDIA"
         ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/pan.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 63,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "Signature",
+            "Permanent",
+            "SWEKYSJOR",
+            "3WEKYSJOR",
+            "DEPARTMEN",
+            "BWEKYSJOR"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "ABRHOO0O0",
+            "WERBLIUFS",
+            "RESIDENGE",
+            "VERBLIUFS",
+            "GEBOORTED",
+            "ABRHOORES",
+            "Voornamen",
+            "NERBLIUFS",
+            "necetissT",
+            "BLISESTRY",
+            "GESOORTED",
+            "ABRHOOODO",
+            "VERBLIUES",
+            "OPMERKING",
+            "VEROLIUFS",
+            "AeRwono00",
+            "RESIDENCE",
+            "ABRHODOGO",
+            "BLIJFSTIT",
+            "AsRwono00",
+            "GPMERKING",
+            "crunigsov",
+            "ABRHOOOOO",
+            "GEROORTED",
+            "Voornaman",
+            "ABRHOOGOO"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "800 100 1007",
+            "2007294190"
+        ],
+        "addresses": [
+            "Chikiten",
+            "Groestone",
+            "Children"
+        ]
     }
 ]
