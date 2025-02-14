@@ -72,16 +72,39 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
         logger.info("*"*20)
         logger.info(f"Data for '{identifier_column}': {data[identifier_column]}, Type: {type(data[identifier_column])},Type data: {type(data)},  Length: {len(data[identifier_column])}")
 
+        import json
+
         # Now iterate over the data in batches
         length = len(data[identifier_column])
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
         for i in range(0, length, batch_size):
-            batch_data = data.iloc[i:i + batch_size]
+            batch_data = data.iloc[i:i + batch_size].copy()  # Copy to avoid modifying original data
+            # Convert JSON-like column correctly
+            for idx, row in batch_data.iterrows():
+                try:
+                    json_str = row['json']
+                    # Ensure it's a valid JSON format
+                    json_str = json_str.replace("'", '"').replace("False", "false").replace("True", "true")
+                    # Remove trailing commas if any
+                    json_str = json_str.rstrip(',')
+                    # Validate JSON format
+                    json.loads(json_str)  # Check if it's valid JSON
+                    # Update the DataFrame with the corrected JSON
+                    batch_data.at[idx, 'json'] = json_str
+                except Exception as e:
+                    print(f"Error in row {idx}: {e}")
+                    continue  # Skip row if there's an error
+
+            # Convert DataFrame to list of tuples
             rows = batch_data.to_records(index=False).tolist()
             column_names = list(batch_data.columns)
+
+            # Insert into ClickHouse
             client.insert(table_name, rows, column_names=column_names)
             logger.info(f"Inserted batch {i // batch_size + 1} into table '{table_name}'")
-        logger.info("*"*20)
+
+        logger.info("*" * 20)
         
         
         logger.info("step 2 ----------------------")
@@ -163,12 +186,9 @@ def profiler_meta_data(ids, batch_size, identifier_column, data, client):
         id_conditions = ",".join([f"'{row_id}'" for row_id in batch_ids])
         delete_query = f"ALTER TABLE {table_name} DELETE WHERE {identifier_column} IN ({id_conditions})"
         logger.debug(f"Executing query: {delete_query}")
-        try:
-            # Uncomment this to execute the query
-            client.command(delete_query)
-            logger.info(f"Deleted batch {i // batch_size + 1} from table '{table_name}'")
-        except Exception as delete_error:
-            logger.error(f"Error during delete operation: {delete_error}")
+        client.command(delete_query)
+        logger.info(f"Deleted batch {i // batch_size + 1} from table '{table_name}'")
+        
 
     # Insert data in batches
     for i in range(0, len(data), batch_size):
