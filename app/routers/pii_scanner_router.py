@@ -1,25 +1,29 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from typing import List, Dict
+from typing import List, Dict, Any
 import os
-import pandas as pd
+import logging
 from uuid import uuid4
 from datetime import datetime
+from client_connect import Connection
 from collections import defaultdict
 import asyncio
 import json
-import logging
-from client_connect import Connection
+from dotenv import load_dotenv
 from pii_scanner.scanner import PIIScanner
 from pii_scanner.constants.patterns_countries import Regions
 
+load_dotenv()
 router = APIRouter()
-pii_scanner = PIIScanner()
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-async def save_file(file: UploadFile, temp_dir: str):
+# Define supported file formats
+UNSTRUCTURED_FILE_FORMATS = os.getenv("UNSTRUCTURED_FILE_FORMATS").split(',')
+STRUCTURED_FILE_FORMATS = os.getenv("STRUCTURED_FILE_FORMATS").split(',')
+
+async def save_file(file: UploadFile, temp_dir: str) -> str:
     """
     Saves the uploaded file temporarily and returns the file path.
     """
@@ -31,122 +35,7 @@ async def save_file(file: UploadFile, temp_dir: str):
         return file_path
     except Exception as e:
         logger.error(f"Failed to save file '{file.filename}': {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to save file '{file.filename}': {str(e)}")
-
-async def process_and_update_ner_results(data: Dict) -> List[Dict]:
-    """
-    Scans structured data for PII entities and calculates confidence scores.
-    """
-    results = []
-    try:
-        for column_name, column_data in data.items():
-            logger.info(f"Scanning column: {column_name}")
-            json_result = await pii_scanner.scan(data=column_data, sample_size=5, region=Regions.IN)
-            column_result = {'column': column_name}
-            
-            if json_result:
-                entity_counts = defaultdict(int)
-                for result in json_result.get("results", []):
-                    if "entity_detected" in result and result["entity_detected"]:
-                        for entity in result["entity_detected"]:
-                            entity_type = entity.get("type")
-                            if entity_type:
-                                entity_counts[entity_type] += 1
-
-                if entity_counts:
-                    total_entities = sum(entity_counts.values())
-                    highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
-                    confidence_score = round(entity_counts[highest_label] / total_entities, 2)
-                    column_result['highest_label'] = highest_label
-                    column_result['confidence_score'] = confidence_score
-                    column_result['detected_entities'] = dict(entity_counts)
-
-            results.append(column_result)
-            logger.info(f"Finished scanning column: {column_name}")
-    except Exception as e:
-        logger.error(f"Error processing NER results: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing NER results: {str(e)}")
-
-    return results
-
-def process_file_data(file_path: str, file_extension: str) -> Dict:
-    """
-    Processes a file based on its extension (CSV, Excel, JSON) into a dictionary structure.
-    """
-    try:
-        if file_extension == 'csv':
-            data = pd.read_csv(file_path, sep=";")
-        elif file_extension in ['xlsx', 'xls']:
-            data = pd.read_excel(file_path)
-        elif file_extension == 'json':
-            data = pd.read_json(file_path)
-        else:
-            raise ValueError("Unsupported file format")
-        
-        if data.empty:
-            raise ValueError(f"No valid data found in {file_extension.upper()} file")
-
-        column_data = {col: [str(value) for value in data[col]] for col in data.columns}
-        logger.info(f"Processed {file_extension.upper()} file {file_path} with columns: {list(data.columns)}")
-        return column_data
-    except Exception as e:
-        logger.error(f"Error processing {file_extension.upper()} file '{file_path}': {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing {file_extension.upper()} file: {str(e)}")
-
-async def process_file(file_path: str, file_extension: str) -> Dict:
-    """
-    Processes the file based on its extension (CSV, PDF, Excel, JSON, etc.) and performs PII scanning.
-    """
-    logger.info(f"Processing file: {file_path} with extension: {file_extension}")
-    
-    if file_extension in ['csv', 'xlsx', 'xls', 'json']:
-        data = process_file_data(file_path, file_extension)
-        return await process_and_update_ner_results(data)
-    
-    elif file_extension in ['pdf', 'txt', 'doc', 'docx']:
-        return await process_unstructured_file(file_path)
-    
-    return {"error": "Unsupported file format."}
-
-
-async def process_unstructured_file(file_path: str) -> Dict:
-    """
-    Scans unstructured files (e.g., PDF, TXT, DOCX) for PII data.
-    """
-    try:
-        logger.info(f"Starting scan for unstructured file: {file_path}")
-        
-        # Logging the size of the file for tracking
-        file_size = os.path.getsize(file_path)
-        logger.info(f"File size: {file_size} bytes")
-        
-        # Initiating the scan
-        logger.info("Calling PII scanner with provided file.")
-        result = await pii_scanner.scan(file_path, sample_size=0.2, region=Regions.IN)
-        
-        # Logging the raw result from the scanner
-        logger.debug(f"Raw scan result: {result}")
-        
-        if result:
-            # Extracting and logging detected entity types
-            entity_types = list({
-                entity['type']
-                for item in result
-                if "entity_detected" in item
-                for entity in item['entity_detected']
-            })
-            logger.info(f"Entities detected in unstructured file: {entity_types}")
-            return {"entity_types": entity_types}
-        
-        # Logging if no entities are detected
-        logger.warning("No entities detected in the unstructured file.")
-        return {"entity_types": []}
-    
-    except Exception as e:
-        # Logging error with traceback for deeper analysis
-        logger.error(f"Error processing unstructured file '{file_path}': {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error processing unstructured file: {str(e)}")
-
+        raise HTTPException(status_code=500, detail=f"Failed to save file '{file.filename}'.")
 
 def get_human_readable_size(file_path: str) -> str:
     size_bytes = os.path.getsize(file_path)
@@ -159,27 +48,100 @@ def get_human_readable_size(file_path: str) -> str:
     else:
         return f"{size_bytes / 1024 ** 3:.0f} GB"
 
+async def process_instant_classifier_files(file_path: str, file_extension: str, file_name: str) -> Dict[str, Any]:
+    """
+    Applies the NER scanner on the file and returns the results.
+    """
+    entity_counts = defaultdict(int)
+    total_entities = 0
+    ner_results = 'NA'
+    scanner = PIIScanner()
+    
+    try:
+        json_result = await scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
+        
+        if not json_result:
+            logger.error(f"No PII detected in the file {file_name} ({file_extension}).")
+            raise ValueError("No PII data detected in the file.")
+
+        # Check if json_result is a list
+        if isinstance(json_result, list):
+            # Process document file results
+            for result in json_result:
+                if isinstance(result, dict) and "entity_detected" in result:
+                    detected_entities = result["entity_detected"]
+                    if isinstance(detected_entities, list):
+                        for entity in detected_entities:
+                            if isinstance(entity, dict):
+                                entity_type = entity.get("type")
+                                if entity_type:
+                                    entity_counts[entity_type] += 1
+                                    total_entities += 1
+                                    
+                # Process image file results
+                elif isinstance(result, dict) and "file_path" in result:
+                    pii_class = result.get("pii_class")
+                    if pii_class:
+                        entity_counts[pii_class] += 1
+                        total_entities += 1
+                        logger.info(f"Detected PII: {pii_class}, Score: {result.get('score')}, Country: {result.get('country_of_origin')}")
+
+        # Check if json_result structured is a dictionary
+        elif isinstance(json_result, dict):
+            for _, data in json_result.items():
+                if isinstance(data, dict) and isinstance(data.get("results"), list):
+                    for result in data["results"]:
+                        detected_entities = result.get("entity_detected", [])
+                        if isinstance(detected_entities, list):
+                            for entity in detected_entities:
+                                entity_type = entity.get("type")
+                                if entity_type:
+                                    entity_counts[entity_type] += 1
+                                    total_entities += 1
+
+        # Prepare NER results
+        if entity_counts:
+            highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
+            confidence_score = round(max(entity_counts.values()) / total_entities, 2)
+            ner_results = {
+                'highest_label': highest_label,
+                'confidence_score': confidence_score,
+                'detected_entities': dict(entity_counts)
+            }
+        else:
+            ner_results = {
+                'highest_label': "NA",
+                'confidence_score': 0.00,
+                'detected_entities': {"NA"}
+            }
+
+        logger.info(f"NER results: {ner_results}")
+
+        return ner_results
+    except Exception as e:
+        logger.error(f"Error processing file {file_name}--{file_extension}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
+
 @router.post("/process-files/")
 async def process_multiple_files(
     customer_id: int = Form(...),
     files: List[UploadFile] = File(...)
-):
+) -> Dict[str, Any]:
     """
     Processes multiple uploaded files using the PII scanner.
     """
-    allowed_extensions = {'csv', 'xlsx', 'xls', 'json', 'txt', 'pdf',"docx","doc"}
-    
     # Validate file extensions
     if not files:
         logger.error("No files uploaded.")
-        raise HTTPException(status_code=400, detail="No files uploaded")
+        raise HTTPException(status_code=400, detail="No files uploaded.")
     
     for file in files:
         file_extension = file.filename.lower().split('.')[-1]
-        if file_extension not in allowed_extensions:
-            logger.error(f"Unsupported file type '.{file_extension}'. Allowed types: {', '.join(allowed_extensions)}")
-            raise HTTPException(status_code=400, detail=f"Unsupported file type '.{file_extension}'. Allowed types: {', '.join(allowed_extensions)}")
-    
+        if file_extension not in STRUCTURED_FILE_FORMATS and file_extension not in UNSTRUCTURED_FILE_FORMATS:
+            allowed_types = ', '.join(STRUCTURED_FILE_FORMATS + UNSTRUCTURED_FILE_FORMATS)
+            logger.error(f"Unsupported file type '.{file_extension}'. Allowed types: {allowed_types}")
+            raise HTTPException(status_code=400, detail=f"Unsupported file type '.{file_extension}'.")
+
     temp_dir = "/tmp/pii_scanner"
     os.makedirs(temp_dir, exist_ok=True)
     all_final_results = []
@@ -189,37 +151,38 @@ async def process_multiple_files(
         for file in files:
             file_path = await save_file(file, temp_dir)
             file_extension = file.filename.lower().split('.')[-1]
-            
+            file_name = file.filename
+
             try:
                 all_scan_results = {}
-                logger.info(f"Processing file: {file.filename} with extension: {file_extension}")
-                save_result = await process_file(file_path, file_extension)
+                logger.info(f"Processing file: {file_name} with extension: {file_extension}")
+                save_result = await process_instant_classifier_files(file_path, file_extension, file_name)
 
                 if save_result:
-                    all_scan_results["file_name"] = file.filename
+                    all_scan_results["file_name"] = file_name
                     all_scan_results["file_extension"] = file_extension
                     all_scan_results["file_size"] = get_human_readable_size(file_path)
-                    all_scan_results["columns"] = save_result
-                    file_names.append(file.filename)
-                    logger.info(f"File {file.filename} processed successfully.")
+                    all_scan_results["results"] = save_result
+                    file_names.append(file_name)
+                    logger.info(f"File {file_name} processed successfully.")
                 else:
-                    all_scan_results[file.filename] = {"error": "No entities detected."}
-                    logger.warning(f"No entities detected in file {file.filename}")
+                    all_scan_results[file_name] = {"error": "No entities detected."}
+                    logger.warning(f"No entities detected in file {file_name}")
 
                 all_final_results.append(all_scan_results)
             
             except Exception as e:
-                all_scan_results[file.filename] = {"error": str(e)}
-                logger.error(f"Error processing file {file.filename}: {str(e)}")
+                all_scan_results[file_name] = {"error": str(e)}
+                logger.error(f"Error processing file {file_name}: {str(e)}")
             
             finally:
                 if os.path.exists(file_path):
                     os.remove(file_path)
-                    logger.info(f"Temporary file {file.filename} removed.")
+                    logger.info(f"Temporary file {file_name} removed.")
 
     except Exception as e:
         logger.error(f"An error occurred while processing files: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing files: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing files: {str(e)}")
 
     # Save results to ClickHouse asynchronously
     await save_instant_data(customer_id, file_names, all_final_results)
@@ -233,7 +196,7 @@ async def process_multiple_files(
         "scan_results": all_final_results
     }
 
-async def save_instant_data(customer_id: int, file_names: List[str], all_final_results: Dict) -> None:
+async def save_instant_data(customer_id: int, file_names: List[str], all_final_results: List[Dict[str, Any]]) -> None:
     """
     Saves the processed scan results to a ClickHouse database.
     """
