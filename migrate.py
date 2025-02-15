@@ -13,6 +13,9 @@ client = clickhouse_connect.get_client(
     password=os.getenv('CLICKHOUSE_PASSWORD'),
     database=os.getenv('CLICKHOUSE_DATABASE')
 )
+# Directory containing migration files  -------------------- important for server end
+# migration_base_path = os.getenv("CLICKHOUSE_BASE_DIR")
+# os.chdir(migration_base_path)
 
 # Directory containing migration files
 migration_dir = './migrations'
