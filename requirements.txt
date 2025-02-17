@@ -167,3 +167,5 @@ uvicorn==0.20.0
 clickhouse-connect
 minio==7.2.12
 python-dotenv==0.20.0
+bumpversion==0.6.0
+
