@@ -127,32 +127,7 @@ async def process_unstructured_file(file_path: str) -> Dict:
         print("RESULT!!!!!!!",result)
         # Logging the raw result from the scanner
         logger.debug(f"Raw scan result: {result}")
-        
-        # if result:
-        #     # Extracting and logging detected entity types
-        #     entity_types = list({
-        #         entity['type']
-        #         for item in result
-        #         if "entity_detected" in item
-        #         for entity in item['entity_detected']
-        #     })
-        #     logger.info(f"Entities detected in unstructured file: {entity_types}")
-        #     return {"entity_types": entity_types}
-        
-        # processed_results = []
-        # for item in result:
-        #     processed_results.append({
-        #         "entity_class": item.get("pii_class"),
-        #         "score": item.get("score"),
-        #         "country_of_origin": item.get("country_of_origin"),
-        #         "faces": item.get("faces"),
-        #         "identifiers": item.get("identifiers", []),
-        #         "emails": item.get("emails", []),
-        #         "phone_numbers": item.get("phone_numbers", []),
-        #         "addresses": item.get("addresses", [])
-        #     })
-        #     logger.info(f"Entities detected in unstructured file: {processed_results}")
-        #     return processed_results
+
         if result:
             if file_extension in {"jpg", "jpeg", "png"}:
         # Extracting and processing detected entities for image files
@@ -300,7 +275,6 @@ async def save_instant_data(customer_id: int, file_names: List[str], all_final_r
         )
     try:
         json_output = json.dumps(all_final_results)
-        print("JSON OUTPUT!!!!",json_output)
         current_time = datetime.now()
         await asyncio.to_thread(client.insert, 
             'instant_classifier',

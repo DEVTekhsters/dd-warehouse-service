@@ -583,5 +583,111 @@
         "addresses": [
             "India"
         ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAXXKXKXK",
+            "XXXKKAAAA",
+            "Authority",
+            "identific",
+            "Identific",
+            "KAAKKKKKK",
+            "XXXXXXXAK",
+            "XXXXXXXXX"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAAKKKKKK",
+            "identific",
+            "XXXXXXXXX",
+            "Identific",
+            "XXXXXXXAK",
+            "XXXKKAAAA",
+            "Authority",
+            "KAXXKXKXK"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "Authority",
+            "KAAKKKKKK",
+            "Identific",
+            "XXXXXXXXX",
+            "identific",
+            "KAXXKXKXK",
+            "XXXXXXXAK",
+            "XXXKKAAAA"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/A_sample_of_Aadhaar_card.jpg",
+        "pii_class": "Aadhaar Card",
+        "score": 37,
+        "country_of_origin": "India",
+        "faces": 0,
+        "identifiers": [
+            "KAXXKXKXK",
+            "XXXKKAAAA",
+            "KAAKKKKKK",
+            "XXXXXXXAK",
+            "Identific",
+            "Authority",
+            "XXXXXXXXX",
+            "identific"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "India"
+        ]
+    },
+    {
+        "file_path": "/tmp/pii_scanner/images.jpeg",
+        "pii_class": "Permanent Account Number",
+        "score": 8,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "Seipreyan",
+            "FNVPMSEHT",
+            "Paveaeses"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Past",
+            "INDIA"
+        ]
     }
 ]
