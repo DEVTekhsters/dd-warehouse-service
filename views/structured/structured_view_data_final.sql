@@ -1,6 +1,13 @@
 CREATE VIEW IF NOT EXISTS structured_view_data_final AS 
 SELECT DISTINCT 
-    c.*,  
+    c.id AS id,
+    c.table_id AS table_id,
+    c.column_name AS column_name,
+    c.json AS json_data,
+    c.detected_entity AS detected_entity,
+    c.data_element AS data_element,
+    c.created_at AS created_at,
+    c.updated_at AS updated_at,
     de.parameter_sensitivity AS sensitivity,
     db.updatedBy AS data_system_owner,
     db.serviceType AS data_systems,
@@ -27,4 +34,4 @@ JOIN
     ON c.table_id = t.id
 JOIN 
     data_element de  
-    ON c.detected_entity = de.parameter_value  
+    ON c.detected_entity = de.parameter_value;
