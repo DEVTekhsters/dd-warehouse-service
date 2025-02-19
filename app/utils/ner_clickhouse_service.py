@@ -94,28 +94,36 @@ class OmdFileProcesser(BaseFileProcessor):
                         ner_results = {
                             'highest_label': "NA",
                             'confidence_score': 0.00,
-                            'detected_entities': "{ NA }"
+                            'detected_entities': {"NA": 0}
                         }
 
                 logger.info(f"NER results for column '{column_name}': {ner_results}")
                 
-                # Determine the detected entity
-                detected_entity = ner_results.get('highest_label') if isinstance(ner_results, dict) else 'NA'
                 
-                # Fetch additional details from ClickHouse
-                data_element = await self.fetch_data_element_category(detected_entity)
+                if highest_label != "NA":
+                    updated_ner_results =  self.pii_filter(ner_results, column_name)
+
+                    if updated_ner_results:
+                        # Assuming you have a function to fetch data element category
+                        data_element = await self.fetch_data_element_category(updated_ner_results["highest_label"])
                 
-                # Update ClickHouse with the NER results
-                update_result = await self.update_entity_for_column(
-                    table_id,
-                    column_name,
-                    ner_results,
-                    detected_entity,
-                    data_element
-                )
-                if not update_result:
-                    logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
-                    return False
+                        # Determine the detected entity
+                        detected_entity = updated_ner_results.get('highest_label') if isinstance(updated_ner_results, dict) else 'NA'
+
+                        # Fetch additional details from ClickHouse
+                        data_element = await self.fetch_data_element_category(detected_entity)
+                        
+                        # Update ClickHouse with the NER results
+                        update_result = await self.update_entity_for_column(
+                            table_id,
+                            column_name,
+                            updated_ner_results,
+                            detected_entity,
+                            data_element
+                        )
+                        if not update_result:
+                            logger.error(f"Failed to save NER results for table_id: {table_id}, column: {column_name}")
+                            return False
 
             return True
 
@@ -127,7 +135,7 @@ class OmdFileProcesser(BaseFileProcessor):
         self,
         table_id: str,
         column_name: str,
-        ner_results,
+        updated_ner_results,
         detected_entity: str,
         data_element
     ) -> bool:
@@ -145,7 +153,7 @@ class OmdFileProcesser(BaseFileProcessor):
             params = {
                 "table_id": table_id,
                 "column_name": column_name,
-                "json": json.dumps(ner_results),
+                "json": json.dumps(updated_ner_results),
                 "detected_entity": detected_entity,
                 "data_element": data_element
                 

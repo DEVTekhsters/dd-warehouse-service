@@ -145,5 +145,805 @@
             "Groestone",
             "Children"
         ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "Voornaman",
+            "VERBLIUES",
+            "GESOORTED",
+            "WERBLIUFS",
+            "crunigsov",
+            "RESIDENCE",
+            "GEROORTED",
+            "NERBLIUFS",
+            "RESIDENGE",
+            "Voornamen",
+            "ABRHOO0O0",
+            "BLIJFSTIT",
+            "ABRHOOGOO",
+            "BLISESTRY",
+            "ABRHOORES",
+            "GEBOORTED",
+            "GPMERKING",
+            "AsRwono00",
+            "ABRHODOGO",
+            "OPMERKING",
+            "necetissT",
+            "ABRHOOODO",
+            "AeRwono00",
+            "VERBLIUFS",
+            "VEROLIUFS",
+            "ABRHOOOOO"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 100 1007",
+            "2007294190",
+            "800 180 1947"
+        ],
+        "addresses": [
+            "Children",
+            "Groestone",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "WERBLIUFS",
+            "GESOORTED",
+            "GEROORTED",
+            "RESIDENGE",
+            "VERBLIUFS",
+            "ABRHOO0O0",
+            "ABRHOOODO",
+            "Voornamen",
+            "GEBOORTED",
+            "crunigsov",
+            "VERBLIUES",
+            "BLISESTRY",
+            "AeRwono00",
+            "GPMERKING",
+            "ABRHOORES",
+            "RESIDENCE",
+            "ABRHOOOOO",
+            "BLIJFSTIT",
+            "Voornaman",
+            "ABRHOOGOO",
+            "NERBLIUFS",
+            "OPMERKING",
+            "VEROLIUFS",
+            "necetissT",
+            "AsRwono00",
+            "ABRHODOGO"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "800 100 1007",
+            "800 180 1947",
+            "2007294190"
+        ],
+        "addresses": [
+            "Children",
+            "Chikiten",
+            "Groestone"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "WERBLIUFS",
+            "GEBOORTED",
+            "RESIDENCE",
+            "BLIJFSTIT",
+            "crunigsov",
+            "RESIDENGE",
+            "VERBLIUFS",
+            "AeRwono00",
+            "ABRHOOOOO",
+            "AsRwono00",
+            "Voornamen",
+            "NERBLIUFS",
+            "ABRHOORES",
+            "GEROORTED",
+            "VEROLIUFS",
+            "ABRHODOGO",
+            "ABRHOO0O0",
+            "OPMERKING",
+            "Voornaman",
+            "GPMERKING",
+            "VERBLIUES",
+            "ABRHOOGOO",
+            "necetissT",
+            "BLISESTRY",
+            "ABRHOOODO",
+            "GESOORTED"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "2007294190",
+            "800 180 1947",
+            "800 100 1007"
+        ],
+        "addresses": [
+            "Chikiten",
+            "Groestone",
+            "Children"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "ABRHOOOOO",
+            "ABRHOOGOO",
+            "GEROORTED",
+            "crunigsov",
+            "necetissT",
+            "RESIDENCE",
+            "ABRHODOGO",
+            "RESIDENGE",
+            "AeRwono00",
+            "ABRHOORES",
+            "VEROLIUFS",
+            "BLIJFSTIT",
+            "GPMERKING",
+            "OPMERKING",
+            "ABRHOO0O0",
+            "NERBLIUFS",
+            "VERBLIUES",
+            "Voornamen",
+            "GESOORTED",
+            "WERBLIUFS",
+            "BLISESTRY",
+            "AsRwono00",
+            "GEBOORTED",
+            "Voornaman",
+            "ABRHOOODO",
+            "VERBLIUFS"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "2007294190",
+            "800 100 1007"
+        ],
+        "addresses": [
+            "Chikiten",
+            "Children",
+            "Groestone"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "OPMERKING",
+            "BLIJFSTIT",
+            "GPMERKING",
+            "BLISESTRY",
+            "GEROORTED",
+            "Voornamen",
+            "VEROLIUFS",
+            "ABRHOORES",
+            "ABRHOO0O0",
+            "ABRHOOODO",
+            "necetissT",
+            "RESIDENCE",
+            "ABRHOOGOO",
+            "AeRwono00",
+            "VERBLIUFS",
+            "GEBOORTED",
+            "NERBLIUFS",
+            "GESOORTED",
+            "VERBLIUES",
+            "RESIDENGE",
+            "WERBLIUFS",
+            "ABRHOOOOO",
+            "crunigsov",
+            "Voornaman",
+            "ABRHODOGO",
+            "AsRwono00"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "800 100 1007",
+            "2007294190"
+        ],
+        "addresses": [
+            "Chikiten",
+            "Groestone",
+            "Children"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "ABRHOOGOO",
+            "GEBOORTED",
+            "ABRHOOODO",
+            "AsRwono00",
+            "RESIDENGE",
+            "OPMERKING",
+            "BLIJFSTIT",
+            "GPMERKING",
+            "VERBLIUFS",
+            "VEROLIUFS",
+            "NERBLIUFS",
+            "ABRHODOGO",
+            "Voornaman",
+            "VERBLIUES",
+            "ABRHOORES",
+            "GEROORTED",
+            "AeRwono00",
+            "ABRHOO0O0",
+            "WERBLIUFS",
+            "crunigsov",
+            "necetissT",
+            "RESIDENCE",
+            "GESOORTED",
+            "Voornamen",
+            "ABRHOOOOO",
+            "BLISESTRY"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "800 100 1007",
+            "2007294190"
+        ],
+        "addresses": [
+            "Groestone",
+            "Children",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "GPMERKING",
+            "necetissT",
+            "GESOORTED",
+            "AsRwono00",
+            "OPMERKING",
+            "ABRHOO0O0",
+            "VEROLIUFS",
+            "GEBOORTED",
+            "VERBLIUES",
+            "RESIDENGE",
+            "crunigsov",
+            "BLIJFSTIT",
+            "ABRHOOOOO",
+            "VERBLIUFS",
+            "WERBLIUFS",
+            "ABRHOOGOO",
+            "Voornamen",
+            "GEROORTED",
+            "NERBLIUFS",
+            "Voornaman",
+            "AeRwono00",
+            "ABRHOOODO",
+            "BLISESTRY",
+            "RESIDENCE",
+            "ABRHOORES",
+            "ABRHODOGO"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "800 100 1007",
+            "2007294190"
+        ],
+        "addresses": [
+            "Groestone",
+            "Children",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "OPMERKING",
+            "ABRHOOGOO",
+            "WERBLIUFS",
+            "RESIDENCE",
+            "VEROLIUFS",
+            "GPMERKING",
+            "Voornamen",
+            "ABRHOO0O0",
+            "AeRwono00",
+            "crunigsov",
+            "NERBLIUFS",
+            "necetissT",
+            "BLISESTRY",
+            "ABRHOORES",
+            "GEBOORTED",
+            "VERBLIUES",
+            "ABRHOOODO",
+            "VERBLIUFS",
+            "RESIDENGE",
+            "GESOORTED",
+            "ABRHOOOOO",
+            "BLIJFSTIT",
+            "GEROORTED",
+            "Voornaman",
+            "AsRwono00",
+            "ABRHODOGO"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "800 100 1007",
+            "800 180 1947",
+            "2007294190"
+        ],
+        "addresses": [
+            "Children",
+            "Chikiten",
+            "Groestone"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "GPMERKING",
+            "BLISESTRY",
+            "necetissT",
+            "ABRHOOOOO",
+            "Voornaman",
+            "ABRHOO0O0",
+            "GEBOORTED",
+            "VERBLIUFS",
+            "ABRHODOGO",
+            "VEROLIUFS",
+            "BLIJFSTIT",
+            "GEROORTED",
+            "VERBLIUES",
+            "AeRwono00",
+            "ABRHOOODO",
+            "OPMERKING",
+            "GESOORTED",
+            "NERBLIUFS",
+            "WERBLIUFS",
+            "Voornamen",
+            "crunigsov",
+            "ABRHOOGOO",
+            "AsRwono00",
+            "ABRHOORES",
+            "RESIDENCE",
+            "RESIDENGE"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3977 8800 0234",
+            "200729419067"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "800 100 1007",
+            "2007294190"
+        ],
+        "addresses": [
+            "Children",
+            "Groestone",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "VERBLIUES",
+            "necetissT",
+            "GEBOORTED",
+            "crunigsov",
+            "Voornamen",
+            "VEROLIUFS",
+            "VERBLIUFS",
+            "AsRwono00",
+            "ABRHOOOOO",
+            "GEROORTED",
+            "RESIDENCE",
+            "WERBLIUFS",
+            "BLISESTRY",
+            "ABRHODOGO",
+            "RESIDENGE",
+            "BLIJFSTIT",
+            "ABRHOOGOO",
+            "Voornaman",
+            "ABRHOO0O0",
+            "ABRHOOODO",
+            "GESOORTED",
+            "OPMERKING",
+            "ABRHOORES",
+            "NERBLIUFS",
+            "GPMERKING",
+            "AeRwono00"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@udai.govin",
+            "help@uidai.gov.in"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "2007294190",
+            "800 100 1007"
+        ],
+        "addresses": [
+            "Chikiten",
+            "Children",
+            "Groestone"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/pan.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 63,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "3WEKYSJOR",
+            "BWEKYSJOR",
+            "Permanent",
+            "Signature",
+            "DEPARTMEN",
+            "SWEKYSJOR"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "2007294190",
+            "800 180 1947",
+            "800 100 1007"
+        ],
+        "addresses": [
+            "Groestone",
+            "Children",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/pan.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 63,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "DEPARTMEN",
+            "Signature",
+            "Permanent",
+            "3WEKYSJOR",
+            "BWEKYSJOR",
+            "SWEKYSJOR"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/002.jpeg",
+        "pii_class": "Resident Identity (Iqama)",
+        "score": 13,
+        "country_of_origin": "Saudi Arabia",
+        "faces": 2,
+        "identifiers": [
+            "AeRwono00",
+            "ABRHOOGOO",
+            "BLIJFSTIT",
+            "RESIDENGE",
+            "crunigsov",
+            "ABRHODOGO",
+            "ABRHOORES",
+            "OPMERKING",
+            "VERBLIUES",
+            "GPMERKING",
+            "GESOORTED",
+            "necetissT",
+            "RESIDENCE",
+            "ABRHOOODO",
+            "ABRHOOOOO",
+            "Voornamen",
+            "WERBLIUFS",
+            "BLISESTRY",
+            "NERBLIUFS",
+            "Voornaman",
+            "GEBOORTED",
+            "GEROORTED",
+            "ABRHOO0O0",
+            "VEROLIUFS",
+            "AsRwono00",
+            "VERBLIUFS"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "Rabe"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/dummy-aadhaar.png",
+        "pii_class": "Aadhaar Card",
+        "score": 33,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "200729419067",
+            "3977 8800 0234"
+        ],
+        "emails": [
+            "help@uidai.gov.in",
+            "help@udai.govin"
+        ],
+        "phone_numbers": [
+            "800 180 1947",
+            "2007294190",
+            "800 100 1007"
+        ],
+        "addresses": [
+            "Children",
+            "Groestone",
+            "Chikiten"
+        ]
+    },
+    {
+        "file_path": "/home/admin/Documents/spaceY/dd/dd-warehouse-service/app/utils/pii_scan/temp_files/pan.jpg",
+        "pii_class": "Permanent Account Number",
+        "score": 63,
+        "country_of_origin": "India",
+        "faces": 1,
+        "identifiers": [
+            "SWEKYSJOR",
+            "BWEKYSJOR",
+            "DEPARTMEN",
+            "Permanent",
+            "3WEKYSJOR",
+            "Signature"
+        ],
+        "emails": [],
+        "phone_numbers": [],
+        "addresses": [
+            "INDIA"
+        ]
     }
 ]

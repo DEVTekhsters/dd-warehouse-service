@@ -193,16 +193,20 @@ class UnstructuredFileProcessor(BaseFileProcessor):
                 ner_results = {
                     'highest_label': "NA",
                     'confidence_score': 0.00,
-                    'detected_entities': {"NA"}
+                    'detected_entities': {"NA": 0}
                 }
 
             logger.info(f"NER results: {ner_results}")
 
-            # Assuming you have a function to fetch data element category
-            data_element = await self.fetch_data_element_category(highest_label)
+            if highest_label != "NA":
+                updated_ner_results =  self.pii_filter(ner_results, file_name)
 
-            # Save the results (assuming you have a method for this)
-            self.save_unstructured_ner_data(ner_results, metadata, data_element, highest_label)
+                if updated_ner_results:
+                    # Assuming you have a function to fetch data element category
+                    data_element = await self.fetch_data_element_category(updated_ner_results["highest_label"])
+
+                    # Save the results (assuming you have a method for this)
+                    self.save_unstructured_ner_data(updated_ner_results, metadata, data_element, updated_ner_results["highest_label"])
 
             return True
 
