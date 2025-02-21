@@ -136,6 +136,7 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         entity_counts = defaultdict(int)
         total_entities = 0
         ner_results = 'NA'
+        highest_label = "NA"
 
         try:
             json_result = await self.scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
