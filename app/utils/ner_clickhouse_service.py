@@ -37,11 +37,14 @@ class OmdFileProcesser(BaseFileProcessor):
         file_content = await file.read()
         try:
             if file_extension.lower() == 'csv':
-                content_str = file_content.decode("utf-8")
-                # Auto-detect CSV delimiter
+                content_str = file_content.decode("utf-8", errors="ignore")  # Prevent decoding errors
                 sniffer = csv.Sniffer()
-                delimiter = sniffer.sniff(content_str).delimiter
-                data = pd.read_csv(StringIO(content_str), sep=delimiter)
+                try:
+                    delimiter = sniffer.sniff(content_str).delimiter
+                except Exception:
+                    delimiter = ';'  # Default delimiter if detection fails
+                
+                data = pd.read_csv(StringIO(content_str), sep=delimiter, header=None)
             elif file_extension.lower() in ['xlsx', 'xls']:
                 data = pd.read_excel(file_content)
             elif file_extension.lower() == 'json':
