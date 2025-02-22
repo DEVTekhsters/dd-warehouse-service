@@ -72,6 +72,7 @@ class OmdFileProcesser(BaseFileProcessor):
                 entity_counts = defaultdict(int)
                 total_entities = 0
                 ner_results = 'NA'
+                highest_label = "NA"
                 
                 # Process the NER results
                 if json_result:

@@ -7,7 +7,7 @@ from collections import defaultdict
 from minio import Minio
 from dotenv import load_dotenv
 from fastapi import HTTPException
-import nltk
+# import nltk
 
 from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
@@ -16,10 +16,10 @@ from app.utils.common_utils import BaseFileProcessor
 
 
 # Download necessary NLTK resources for natural language processing
-nltk.download('punkt')
-nltk.download('punkt_tab')
-nltk.download('stopwords')
-nltk.download('averaged_perceptron_tagger_eng')
+# nltk.download('punkt')
+# nltk.download('punkt_tab')
+# nltk.download('stopwords')
+# nltk.download('averaged_perceptron_tagger_eng')
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +136,7 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         entity_counts = defaultdict(int)
         total_entities = 0
         ner_results = 'NA'
+        highest_label = "NA"
 
         try:
             json_result = await self.scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
