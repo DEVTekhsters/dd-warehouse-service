@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS ner_unstructured_data
     file_type String,  
     source String,
     sub_service String,
-    region String,                        
+    region String,
+    false_positive String,
+    false_postive_note String,                   
     created_at DateTime DEFAULT now(),         
     updated_at DateTime DEFAULT now()          
 ) 

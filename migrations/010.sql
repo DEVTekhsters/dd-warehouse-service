@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS profiler_metadata (
     entityFQNHash String,
-    rowCount Float64,
+    rowCount String,
     timestamp UInt64,
-    sizeInByte Float64,
-    columnCount Float64,
-    profileSample Float64,
+    sizeInByte String,
+    columnCount String,
+    profileSample String,
     createDateTime UInt64,
     profileSampleType String
 )
