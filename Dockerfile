@@ -30,7 +30,8 @@ RUN python -m spacy download en_core_web_trf
 
 RUN python -c "import nltk; nltk.download('punkt')"
 RUN python -c "import nltk; nltk.download('punkt_tab')"
-
+RUN python -c "import nltk; nltk.download('stopwords')"
+RUN python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
 
 # Install dependencies
 COPY requirements.txt ./
