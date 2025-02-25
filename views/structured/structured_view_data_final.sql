@@ -3,7 +3,7 @@ SELECT DISTINCT
     c.id AS id,
     c.table_id AS table_id,
     c.column_name AS column_name,
-    c.json AS json_data,
+    c.json AS json,
     c.detected_entity AS detected_entity,
     c.data_element AS data_element,
     c.created_at AS created_at,
