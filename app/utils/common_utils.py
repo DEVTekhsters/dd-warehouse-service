@@ -12,6 +12,31 @@ class BaseFileProcessor:
         """Returns a ClickHouse client instance."""
         return Connection.client
     
+    def aws_region_update(self, region):
+        """
+        Updates the region mapping if it exists, logs the change, and returns the mapped value.
+        """
+        try:
+            client = self.get_clickhouse_client()
+            query = "SELECT code, country FROM region_mapping;"
+            result = client.query(query)
+
+            # Convert query result into a dictionary {code: country}
+            aws_region_mapping = {row[0]: row[1] for row in result.result_rows}
+
+            if region in aws_region_mapping:
+                updated_region = aws_region_mapping[region]
+                logger.info(f"The location is updated from {region} to {updated_region}")
+                return updated_region
+            
+            return region  # Return the original region if not found in the mapping
+        
+        except Exception as e:
+            logger.error(f"Error updating region: {str(e)}")
+            return region  # Return original region to avoid breaking the process
+    
+
+
     def pii_filter(self, ner_results: dict, file_name: str) -> dict:
         """
         Filters the NER results, keeping only valid PII entities.

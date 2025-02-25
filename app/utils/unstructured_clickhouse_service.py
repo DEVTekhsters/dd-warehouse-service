@@ -107,7 +107,10 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         source_parts = data_received.source_type.split(',')
         source = source_parts[0].strip() if source_parts else "N/A"
         sub_service = source_parts[1].strip() if len(source_parts) > 1 else "N/A"
-
+        
+        # Updating the aws region to countries
+        region = self.aws_region_update(data_received.region)
+        
         metadata = {
             "source_bucket": data_received.source_bucket,
             "file_name": file_name,
@@ -115,7 +118,7 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             "file_type": file_type,
             "source": source,
             "sub_service": sub_service,
-            "region": data_received.region,
+            "region": region,
         }
 
         try:
