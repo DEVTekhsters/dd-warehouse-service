@@ -1,6 +1,6 @@
 CREATE VIEW IF NOT EXISTS unstructured_view_data_ner AS 
 SELECT 
-    c.*, 
+    Distinct c.*, 
     d.parameter_sensitivity
 FROM 
     ner_unstructured_data c
