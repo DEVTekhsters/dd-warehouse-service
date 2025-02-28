@@ -1,6 +1,6 @@
 __pycache__/
 .env
-/.newvenv/
+/.nenv/
 /test/
 *.pyc
 /venv/

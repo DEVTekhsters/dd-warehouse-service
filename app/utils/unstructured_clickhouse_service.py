@@ -1,17 +1,10 @@
 import os
-import json
 import logging
 from pathlib import Path
-from collections import defaultdict
-
 from minio import Minio
 from dotenv import load_dotenv
 from fastapi import HTTPException
-
-from client_connect import Connection
-from pii_scanner.scanner import PIIScanner
-from pii_scanner.constants.patterns_countries import Regions
-from app.utils.common_utils import BaseFileProcessor
+from app.utils.unified_processing import UnifiedProcessor
 
 
 logger = logging.getLogger(__name__)
@@ -24,11 +17,12 @@ TEMP_FOLDER = Path(__file__).resolve().parent.parent / 'utils/temp_files'
 if not TEMP_FOLDER.exists():
     TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
 
-class UnstructuredFileProcessor(BaseFileProcessor):
+class UnstructuredFileProcessor(UnifiedProcessor):
     """
     A class to encapsulate processing of unstructured files, applying NER and updating results in ClickHouse.
     """
     def __init__(self):
+        super().__init__()
         # MinIO configuration for object storage
         self.MINIO_URL = os.getenv("MINIO_URL")
         self.MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
@@ -47,9 +41,6 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             secure=self.MINIO_SECURE
         )
 
-        # Initialize the PII scanner
-        self.scanner = PIIScanner()
-
     async def process_files_from_minio(self, bucket_name: str, folder_name: str, data_received):
         """
         Lists and processes files from a specified MinIO bucket and folder.
@@ -60,30 +51,31 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             for obj in objects:
                 file_name = obj.object_name
                 file_extension = file_name.split(".")[-1].lower()
+                temp_file_path_t = None  # Initialize temp_file_path_t
 
                 logger.info(f"Processing file: {file_name}")
                 if file_extension not in self.UNSTRUCTURED_FILE_FORMATS and file_extension not in self.STRUCTURED_FILE_FORMATS:
                     logger.warning(f"File {file_name} has an unsupported format. Skipping it.")
                     continue
 
-                temp_file_path = TEMP_FOLDER / file_name.split("/")[-1]
-                self.minio_client.fget_object(bucket_name, file_name, str(temp_file_path))
+                temp_file_path_t = TEMP_FOLDER / file_name.split("/")[-1]
+                self.minio_client.fget_object(bucket_name, file_name, str(temp_file_path_t))
 
                 try:
-                    await self.process_ner_for_file(temp_file_path, data_received)
+                    await self.process_ner_for_file(temp_file_path_t, data_received)
                     self.minio_client.remove_object(bucket_name, file_name)
                     logger.info(f"Successfully deleted file: {file_name} from MinIO.")
                 except Exception as ner_error:
                     logger.error(f"NER processing failed for file {file_name}: {str(ner_error)}")
 
-                    if temp_file_path.exists():
-                        os.remove(temp_file_path)
-                        logger.info(f"Deleted local temp file: {temp_file_path}")
+                    if temp_file_path_t.exists():
+                        os.remove(temp_file_path_t)
+                        logger.info(f"Deleted local temp file: {temp_file_path_t}")
                     continue
 
-                if temp_file_path.exists():
-                    os.remove(temp_file_path)
-                    logger.info(f"Deleted local temp file: {temp_file_path}")
+                if temp_file_path_t.exists():
+                    os.remove(temp_file_path_t)
+                    logger.info(f"Deleted local temp file: {temp_file_path_t}")
 
         except Exception as e:
             logger.error(f"Error during file processing: {e}")
@@ -117,9 +109,12 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             "sub_service": sub_service,
             "region": region,
         }
-
         try:
-            results = await self.process_and_update_ner_results_unstructured(file_path, file_type, file_name, metadata)
+            results = await self.process_and_update_ner_results(
+                    file_path=file_path,
+                    metadata=metadata,
+                    profiler="unstructured"
+                )
             if not results:
                 logger.error("No NER results detected.")
             logger.info(f"PII results processed for file {file_name}")
@@ -127,154 +122,3 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         except Exception as e:
             logger.error(f"Error processing file {file_name}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-
-    def determine_sample_size(self,file_size_mb: float) -> float:
-        """
-        Determines the appropriate sample size percentage based on file size.
-        
-        Args:
-            file_size_mb (float): File size in MB.
-        
-        Returns:
-            float: Sample size percentage.
-        """
-        if 1 <= file_size_mb <= 10:
-            return 0.005
-        elif file_size_mb <= 30:
-            return 0.004
-        elif file_size_mb <= 50:
-            return 0.003
-        elif file_size_mb <= 80:
-            return 0.002
-        else:
-            return 0.0002
-
-    async def process_and_update_ner_results_unstructured(self, file_path: Path, file_type: str, file_name: str, metadata: dict):
-        """
-        Applies the NER scanner on the file and updates the results in ClickHouse.
-        """
-        entity_counts = defaultdict(int)
-        total_entities = 0
-        ner_results = 'NA'
-        highest_label = "NA"
-
-        try:
-            file_size_mb = file_path.stat().st_size / (1024 * 1024)  # Convert bytes to MB
-            
-            if file_type.lower() in ["csv","xls","xlsx"]:
-                sample_size = self.determine_sample_size(file_size_mb)
-            else:
-                sample_size = 0.2
-
-            json_result = await self.scanner.scan(str(file_path), sample_size=sample_size, region=Regions.IN)
-         
-            if not json_result:
-                logger.error(f"No PII detected in the file {file_name} ({file_type}).")
-                raise ValueError("No PII data detected in the file.")
-
-            # Check if json_result is a list
-            if isinstance(json_result, list):
-                # Process document file results
-                for result in json_result:
-                    if isinstance(result, dict) and "entity_detected" in result:
-                        detected_entities = result["entity_detected"]
-                        if isinstance(detected_entities, list):
-                            for entity in detected_entities:
-                                if isinstance(entity, dict):
-                                    entity_type = entity.get("type")
-                                    if entity_type:
-                                        entity_counts[entity_type] += 1
-                                        total_entities += 1
-                                        
-                    # Process image file results
-                    elif isinstance(result, dict) and "file_path" in result:
-                        pii_class = result.get("pii_class")
-                        if pii_class:
-                            entity_counts[pii_class] += 1
-                            total_entities += 1
-                            # Log additional information if needed
-                            logger.info(f"Detected PII: {pii_class}, Score: {result.get('score')}, Country: {result.get('country_of_origin')}")
-
-            # Check if json_result stuctured is a dictionary
-            elif isinstance(json_result, dict):
-                for _, data in json_result.items():
-                    if isinstance(data, dict) and isinstance(data.get("results"), list):
-                        for result in data["results"]:
-                            detected_entities = result.get("entity_detected", [])
-                            if isinstance(detected_entities, list):
-                                for entity in detected_entities:
-                                    entity_type = entity.get("type")
-                                    if entity_type:
-                                        entity_counts[entity_type] += 1
-                                        total_entities += 1
-
-            # Prepare NER results
-            if entity_counts:
-                highest_label = max(entity_counts.items(), key=lambda x: x[1])[0]
-                confidence_score = round(max(entity_counts.values()) / total_entities, 2)
-                ner_results = {
-                    'highest_label': highest_label,
-                    'confidence_score': confidence_score,
-                    'detected_entities': dict(entity_counts)
-                }
-            else:
-                ner_results = {
-                    'highest_label': "NA",
-                    'confidence_score': 0.00,
-                    'detected_entities': {"NA": 0}
-                }
-
-            logger.info(f"NER results: {ner_results}")
-
-            if highest_label != "NA":
-                updated_ner_results =  self.pii_filter(ner_results, file_name)
-
-                if updated_ner_results:
-                    # Assuming you have a function to fetch data element category
-                    data_element = await self.fetch_data_element_category(updated_ner_results["highest_label"])
-
-                    # Save the results (assuming you have a method for this)
-                    self.save_unstructured_ner_data(updated_ner_results, metadata, data_element, updated_ner_results["highest_label"])
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error processing file {file_name}--{file_type}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
-    
-    def save_unstructured_ner_data(self, ner_results, metadata, data_element, detected_entity):
-        """
-        Saves the NER results and associated metadata into the ClickHouse database.
-        """
-        if not ner_results:
-            logger.error("No PII data detected in the file.")
-            raise ValueError("No PII data detected")
-        ner_results_json = json.dumps(ner_results)
-        data_to_insert = {
-            "source_bucket": metadata.get("source_bucket"),
-            "file_name": metadata.get("file_name"),
-            "json": ner_results_json,
-            "detected_entity": detected_entity,
-            "data_element": data_element,
-            "file_size": metadata.get("file_size"),
-            "file_type": metadata.get("file_type"),
-            "source": metadata.get("source"),
-            "sub_service": metadata.get("sub_service"),
-            "region": metadata.get("region")
-        }
-
-        connection = Connection()
-        client = connection.client
-        try:
-            insert_query = """
-            INSERT INTO ner_unstructured_data 
-            (source_bucket, file_name, json, detected_entity, data_element, file_size, file_type, source, sub_service, region)
-            VALUES 
-            (%(source_bucket)s, %(file_name)s, %(json)s, %(detected_entity)s, %(data_element)s, %(file_size)s, %(file_type)s, %(source)s, %(sub_service)s, %(region)s)
-            """
-            client.command(insert_query, data_to_insert)
-            logger.info("Successfully inserted data into the ner_unstructured_data table.")
-            return True
-        except Exception as e:
-            logger.error(f"Error inserting data into the database: {e}")
-            raise HTTPException(status_code=500, detail="Error inserting data into the database")
