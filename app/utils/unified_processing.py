@@ -163,7 +163,7 @@ class UnifiedProcessor(BaseFileProcessor):
             return 0.004
         elif file_size_mb <= 50:
             return 0.003
-        elif file_size_mb >= 80:
+        elif 50 <= file_size_mb :
             return 0.002
         else:
             return 0.2
