@@ -33,3 +33,4 @@ INSERT INTO region_mapping (code, continent, country) VALUES
 ('me-south-1', 'Middle East', 'BAHRAIN'),
 ('me-central-1', 'Middle East', 'UAE'),
 ('sa-east-1', 'South America', 'BRAZIL');
+
