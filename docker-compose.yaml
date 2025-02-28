@@ -1,54 +1,119 @@
- 
-version: '3'
+version: '3.8'
+
 services:
   clickhouse-server:
-    image: yandex/clickhouse-server
+    image: clickhouse/clickhouse-server:latest
     volumes:
-      - shared-ch-data:/var/lib/clickhouse  # Persistent storage for ClickHouse data
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml
-      - ./clickhouse/zookeeper-servers.xml:/etc/clickhouse-server/conf.d/zookeeper-servers.xml
-      - ./data/preprocessed_configs:/var/lib/clickhouse/preprocessed_configs
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - clickhouse-data:/var/lib/clickhouse
     ports:
-      - '8123:8123'  # HTTP interface
-      - '9002:9002'  # Native client
-  clickhouse-client:
-    image: yandex/clickhouse-client
-    entrypoint:
-      - /bin/sleep
-    command:
-      - infinity
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"  # Grafana UI port
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD} # Set a password for the admin user
-    volumes:
-      - grafana-data:/var/lib/grafana  # Persist Grafana data
-      - ./provisioning:/etc/grafana/provisioning  # Mount provisioning directory
+      - "8123:8123"
+      - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
   web:
-    build: .
-    command: uvicorn main:app --host 0.0.0.0
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - .:/app
+      - ./app/logs:/app/logs
+      - temp-storage:/tmp/pii_scanner
     ports:
-      - "8002:8000"
+      - "8000:8000"
     environment:
-      MINIO_URL: ${MINIO_URL}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
-      MINIO_SECURE: ${MINIO_SECURE}
-      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
-      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT}
-      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
-      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
-      UNSTRUCTURED_FILE_FORMATS: ${UNSTRUCTURED_FILE_FORMATS}
-      STRUCTURED_FILE_FORMATS: ${STRUCTURED_FILE_FORMATS}
-      
+      - CLICKHOUSE_HOST=clickhouse-server
+      - CLICKHOUSE_PORT=9000
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-default}
+      - MEMORY_LIMIT=1610612736  # 1.5GB in bytes
+      - MAX_WORKERS=1
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1.5G
+        reservations:
+          memory: 1G
+    ulimits:
+      memlock:
+        soft: 1610612736  # 1.5GB
+        hard: 1610612736  # 1.5GB
+    depends_on:
+      - clickhouse-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      - prometheus
+
 volumes:
+  clickhouse-data:
+    driver: local
+  prometheus-data:
+    driver: local
   grafana-data:
-    external: false  # Mark it as internal to ensure Docker manages the volume
-  shared-ch-data:
-    external: false  # Same for ClickHouse data
+    driver: local
+  temp-storage:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=2g
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
