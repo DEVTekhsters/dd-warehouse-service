@@ -7,7 +7,6 @@ from collections import defaultdict
 from minio import Minio
 from dotenv import load_dotenv
 from fastapi import HTTPException
-# import nltk
 
 from client_connect import Connection
 from pii_scanner.scanner import PIIScanner
@@ -15,19 +14,13 @@ from pii_scanner.constants.patterns_countries import Regions
 from app.utils.common_utils import BaseFileProcessor
 
 
-# Download necessary NLTK resources for natural language processing
-# nltk.download('punkt')
-# nltk.download('punkt_tab')
-# nltk.download('stopwords')
-# nltk.download('averaged_perceptron_tagger_eng')
-
 logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 # Define the temporary folder path for storing files
-TEMP_FOLDER = Path(__file__).resolve().parent.parent / 'utils/pii_scan/temp_files'
+TEMP_FOLDER = Path(__file__).resolve().parent.parent / 'utils/temp_files'
 if not TEMP_FOLDER.exists():
     TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
 
@@ -82,6 +75,10 @@ class UnstructuredFileProcessor(BaseFileProcessor):
                     logger.info(f"Successfully deleted file: {file_name} from MinIO.")
                 except Exception as ner_error:
                     logger.error(f"NER processing failed for file {file_name}: {str(ner_error)}")
+
+                    if temp_file_path.exists():
+                        os.remove(temp_file_path)
+                        logger.info(f"Deleted local temp file: {temp_file_path}")
                     continue
 
                 if temp_file_path.exists():
@@ -107,7 +104,10 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         source_parts = data_received.source_type.split(',')
         source = source_parts[0].strip() if source_parts else "N/A"
         sub_service = source_parts[1].strip() if len(source_parts) > 1 else "N/A"
-
+        
+        # Updating the aws region to countries
+        region = self.aws_region_update(data_received.region)
+        
         metadata = {
             "source_bucket": data_received.source_bucket,
             "file_name": file_name,
@@ -115,7 +115,7 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             "file_type": file_type,
             "source": source,
             "sub_service": sub_service,
-            "region": data_received.region,
+            "region": region,
         }
 
         try:
@@ -128,6 +128,26 @@ class UnstructuredFileProcessor(BaseFileProcessor):
             logger.error(f"Error processing file {file_name}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error during NER processing: {str(e)}")
 
+    def determine_sample_size(self,file_size_mb: float) -> float:
+        """
+        Determines the appropriate sample size percentage based on file size.
+        
+        Args:
+            file_size_mb (float): File size in MB.
+        
+        Returns:
+            float: Sample size percentage.
+        """
+        if 1 <= file_size_mb <= 10:
+            return 0.005
+        elif file_size_mb <= 30:
+            return 0.004
+        elif file_size_mb <= 50:
+            return 0.003
+        elif file_size_mb <= 80:
+            return 0.002
+        else:
+            return 0.0002
 
     async def process_and_update_ner_results_unstructured(self, file_path: Path, file_type: str, file_name: str, metadata: dict):
         """
@@ -139,7 +159,14 @@ class UnstructuredFileProcessor(BaseFileProcessor):
         highest_label = "NA"
 
         try:
-            json_result = await self.scanner.scan(str(file_path), sample_size=0.2, region=Regions.IN)
+            file_size_mb = file_path.stat().st_size / (1024 * 1024)  # Convert bytes to MB
+            
+            if file_type.lower() in ["csv","xls","xlsx"]:
+                sample_size = self.determine_sample_size(file_size_mb)
+            else:
+                sample_size = 0.2
+
+            json_result = await self.scanner.scan(str(file_path), sample_size=sample_size, region=Regions.IN)
          
             if not json_result:
                 logger.error(f"No PII detected in the file {file_name} ({file_type}).")

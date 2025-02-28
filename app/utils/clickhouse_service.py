@@ -4,10 +4,12 @@ import datetime
 import logging
 import json
 import re
-
+from app.utils.common_utils import BaseFileProcessor
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+base_file_processor = BaseFileProcessor()
 
 def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 1000):
     """
@@ -144,9 +146,11 @@ def save_omd_table_data(entity_type: str, data: pd.DataFrame, batch_size: int = 
                 # Split the hostPort value
                 host_parts = host_port.split(".") if host_port else []
                 # Ensure host_parts has enough elements before accessing indices
-                region = host_parts[2] if len(host_parts) > 2 else "N/A"
+                host_region = host_parts[2] if len(host_parts) > 2 else "N/A"
                 source = host_parts[4] if len(host_parts) > 4 else "N/A"
-
+                # Updating the aws region to countries
+                region = base_file_processor.aws_region_update(host_region)
+                
                 # Extract other fields directly from the DataFrame
                 if entity_type == "profiler_data_time_series":
                     dbservice_entity_id = row['entityFQNHash']

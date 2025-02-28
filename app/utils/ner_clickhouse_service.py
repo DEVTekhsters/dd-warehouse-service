@@ -44,7 +44,7 @@ class OmdFileProcesser(BaseFileProcessor):
                 except Exception:
                     delimiter = ';'  # Default delimiter if detection fails
                 
-                data = pd.read_csv(StringIO(content_str), sep=delimiter, header=None)
+                data = pd.read_csv(StringIO(content_str), sep=delimiter)
             elif file_extension.lower() in ['xlsx', 'xls']:
                 data = pd.read_excel(file_content)
             elif file_extension.lower() == 'json':
