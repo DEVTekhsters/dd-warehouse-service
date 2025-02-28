@@ -158,15 +158,15 @@ class UnifiedProcessor(BaseFileProcessor):
     def determine_sample_size(self, file_size_mb: float) -> float:
         """Determines the appropriate sample size percentage based on file size."""
         if 5 <= file_size_mb <= 10:
-            return 0.005
+            return 0.05
         elif file_size_mb <= 30:
             return 0.004
         elif file_size_mb <= 50:
             return 0.003
-        elif file_size_mb <= 80:
+        elif 50 <= file_size_mb :
             return 0.002
         else:
-            return 0.0002
+            return 0.2
 
     def calculate_ner_scores(self, entity_counts, total_entities):
         """Calculates highest detected entity and confidence score."""
